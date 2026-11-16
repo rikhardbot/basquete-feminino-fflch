@@ -61,7 +61,7 @@ h1,h2,h3,p{margin:0}
 /* ---------- Vinheta: tela laranja rasgada pela garra ---------- */
 #intro{position:fixed;inset:0;z-index:100;overflow:hidden}
 #intro.gone{display:none}
-#intro .layer{position:absolute;inset:0;transition:transform 1s cubic-bezier(.7,0,.2,1)}
+#intro .layer{position:absolute;inset:0;transition:transform 1s cubic-bezier(.7,0,.2,1);will-change:transform;backface-visibility:hidden}
 #intro .layer svg.sheet{position:absolute;inset:0;width:100%;height:100%}
 #intro .b{visibility:hidden;clip-path:polygon(100% 0,100% 100%,0 100%)}
 #intro.out .b{visibility:visible}
@@ -589,138 +589,151 @@ var DADOS = {
     setTimeout(ready, 150);
     setTimeout(function(){ intro.classList.add('gone'); }, 1050);
   }
-  if (reduce) endIntro(true); else setTimeout(function(){ endIntro(false); }, 1900);
+  if (reduce) endIntro(true);
+  else {
+    // janelas da abertura, usadas pela bola para agendar o trabalho pesado
+    var t0 = performance.now();
+    window.__intro = { holdFrom: t0 + 1000, holdTo: t0 + 1880, done: t0 + 1900 + 1050 };
+    setTimeout(function(){ endIntro(false); }, 1900);
+  }
 })();
 </script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js" defer></script>
 <script>
-/* ---- bola 3D realista (Three.js); sem WebGL, aparece uma bola em CSS ---- */
-window.addEventListener('load', function(){
+/* ---- bola 3D realista (Three.js) ----
+   A textura (pesada) é gerada num Web Worker, fora da thread principal,
+   para não travar a abertura. A parte de GPU (shader, upload das texturas)
+   é feita durante a pausa da abertura, quando nada se mexe na tela. */
+(function(){
   var box = document.getElementById('ballbox');
   var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
-  if (!window.THREE){ box.classList.add('no3d'); return; }
-  function start(){ try { ball(); } catch(e){ box.classList.add('no3d'); } }
-  // a abertura anima entre 0,3–1,0 s e 1,9–2,9 s; as texturas (pesadas) são geradas fora desses trechos
-  var t = performance.now();
-  if (reduce || !document.getElementById('intro')) start();
-  else if (t < 1000) setTimeout(start, 1000 - t);
-  else if (t > 1750 && t < 2950) setTimeout(start, 2950 - t);
-  else start();
 
-  /* Texturas geradas: cor, relevo (normal map) e aspereza.
-     Costuras de uma bola de 8 gomos: 2 círculos máximos perpendiculares
-     + 2 curvas laterais (círculos menores em volta do eixo X). */
-  function maps(){
-    var W = window.innerWidth < 700 ? 1024 : 2048, H = W/2, PI = Math.PI, K = W/2048;
+  /* Gera cor, relevo (normal) e aspereza da bola em arrays de bytes.
+     Roda dentro do Worker (ou na thread principal, se Worker não existir).
+     Linhas gravadas de baixo para cima, como o Three.js espera em DataTexture. */
+  function genMaps(W, H){
+    var PI = Math.PI, K = W/2048, i, j, px, py;
     var seams = [
-      {type:'g', n:[0,0,1]},
-      {type:'g', n:[1,0,0]},
-      {type:'s', a:[1,0,0], t:0.96},
-      {type:'s', a:[-1,0,0], t:0.96}
+      {g:1, n:[0,0,1]}, {g:1, n:[1,0,0]},
+      {g:0, a:[1,0,0], t:0.96}, {g:0, a:[-1,0,0], t:0.96}
     ];
-    var GROOVE = 0.03; // meia largura do canal, em radianos
+    var GROOVE = 0.03;
 
-    // 1) granulado: pontinhos em relevo, compensando a distorção nos polos
-    var hc = document.createElement('canvas'); hc.width = W; hc.height = H;
-    var hg = hc.getContext('2d');
-    hg.fillStyle = '#000'; hg.fillRect(0,0,W,H);
-    hg.globalCompositeOperation = 'lighter';
-    // um "grão" pré-desenhado, carimbado milhares de vezes (rápido)
-    var dot = document.createElement('canvas'); dot.width = dot.height = 16;
-    var dg = dot.getContext('2d'), dgr = dg.createRadialGradient(8, 8, 0, 8, 8, 8);
-    dgr.addColorStop(0, 'rgba(255,255,255,.6)'); dgr.addColorStop(1, 'rgba(255,255,255,0)');
-    dg.fillStyle = dgr; dg.fillRect(0, 0, 16, 16);
-    var N = 95000*K*K;
-    for (var i = 0; i < N; i++){
+    // 1) granulado: "carimbos" somados, com compensação da distorção nos polos
+    var peb = new Float32Array(W*H), N = Math.round(95000*K*K);
+    for (i = 0; i < N; i++){
       var y = Math.random()*H, s = Math.sin(y/H*PI);
-      if (Math.random() > s) continue;               // menos grãos perto dos polos
-      var x = Math.random()*W, r = (1.7 + Math.random()*1.1)*Math.max(K,.6), rx = r/Math.max(s, .08);
-      hg.drawImage(dot, x - rx, y - r, rx*2, r*2);
-      if (x < rx) hg.drawImage(dot, x + W - rx, y - r, rx*2, r*2);
-      else if (x > W - rx) hg.drawImage(dot, x - W - rx, y - r, rx*2, r*2);
-    }
-    var peb = hg.getImageData(0,0,W,H).data;
-
-    // 2) distância de cada pixel até a costura mais próxima
-    var height = new Float32Array(W*H), dist = new Float32Array(W*H);
-    for (var py = 0; py < H; py++){
-      var th = (py + .5)/H*PI, st = Math.sin(th), ct = Math.cos(th);
-      for (var px = 0; px < W; px++){
-        var ph = (px + .5)/W*PI*2;
-        // mesma convenção de UV da SphereGeometry do Three.js
-        var p = [-Math.cos(ph)*st, ct, Math.sin(ph)*st];
-        var d = 9;
-        for (var k = 0; k < 4; k++){
-          var sm = seams[k], v;
-          if (sm.type === 'g') v = Math.abs(Math.asin(Math.max(-1, Math.min(1, p[0]*sm.n[0] + p[1]*sm.n[1] + p[2]*sm.n[2]))));
-          else v = Math.abs(Math.acos(Math.max(-1, Math.min(1, p[0]*sm.a[0] + p[1]*sm.a[1] + p[2]*sm.a[2]))) - sm.t);
-          if (v < d) d = v;
+      if (Math.random() > s) continue;
+      var x = Math.random()*W, r = (1.7 + Math.random()*1.1)*Math.max(K,.6), rx = r/Math.max(s,.08);
+      var y0 = Math.max(0, Math.floor(y - r)), y1 = Math.min(H-1, Math.ceil(y + r));
+      var x0 = Math.floor(x - rx), x1 = Math.ceil(x + rx);
+      for (var yy = y0; yy <= y1; yy++){
+        var dy = (yy + .5 - y)/r;
+        for (var xx = x0; xx <= x1; xx++){
+          var dx = (xx + .5 - x)/rx, d = Math.sqrt(dx*dx + dy*dy);
+          if (d < 1){ var xw = (xx % W + W) % W; peb[yy*W + xw] += 0.6*(1 - d); }
         }
-        var idx = py*W + px;
-        dist[idx] = d;
-        var g = Math.min(1, d/GROOVE);                // 0 no fundo do canal, 1 na borda
-        var groove = g*g*(3 - 2*g);                   // suaviza a parede do canal
-        var pb = peb[idx*4]/255;
-        height[idx] = groove*(0.55 + pb*0.45*(g >= 1 ? 1 : g));
       }
     }
+    for (i = 0; i < W*H; i++) if (peb[i] > 1) peb[i] = 1;
 
-    // 3) mapa de cor
-    var cc = document.createElement('canvas'); cc.width = W; cc.height = H;
-    var cg = cc.getContext('2d'), cimg = cg.createImageData(W, H), c = cimg.data;
-    // manchas suaves de tom, como couro usado
-    var blobs = [];
-    for (var b = 0; b < 40; b++) blobs.push([Math.random()*W, Math.random()*H, (80 + Math.random()*260)*K, (Math.random() - .5)*0.12]);
-    var tone = new Float32Array(W*H);
-    for (b = 0; b < blobs.length; b++){
-      var B = blobs[b], x0 = Math.max(0, B[0]-B[2]|0), x1 = Math.min(W, B[0]+B[2]|0), y0 = Math.max(0, B[1]-B[2]|0), y1 = Math.min(H, B[1]+B[2]|0);
-      for (var yy = y0; yy < y1; yy++) for (var xx = x0; xx < x1; xx++){
-        var dd = ((xx-B[0])*(xx-B[0]) + (yy-B[1])*(yy-B[1]))/(B[2]*B[2]);
-        if (dd < 1) tone[yy*W+xx] += B[3]*(1-dd)*(1-dd);
-      }
-    }
-    for (var j = 0; j < W*H; j++){
-      var gg = Math.min(1, dist[j]/GROOVE), pv = peb[j*4]/255, t = 1 + tone[j];
-      // couro: laranja-tijolo; vales do granulado um pouco mais escuros
-      var shade = (0.86 + pv*0.16)*t;
-      var R = 196*shade, G = 84*shade, Bl = 36*shade;
-      // canal preto de borracha, com leve transição
-      var m = gg < 0.78 ? 0 : (gg - 0.78)/0.22; m = m*m*(3 - 2*m);
-      c[j*4]   = 22 + (R - 22)*m;
-      c[j*4+1] = 17 + (G - 17)*m;
-      c[j*4+2] = 15 + (Bl - 15)*m;
-      c[j*4+3] = 255;
-    }
-    cg.putImageData(cimg, 0, 0);
-
-    // 4) normal map a partir do relevo
-    var nc = document.createElement('canvas'); nc.width = W; nc.height = H;
-    var ng = nc.getContext('2d'), nimg = ng.createImageData(W, H), n = nimg.data, S = 3.2;
+    // 2) distância até a costura mais próxima e altura do relevo
+    var dist = new Float32Array(W*H), height = new Float32Array(W*H);
     for (py = 0; py < H; py++){
-      var sx = Math.max(Math.sin((py + .5)/H*PI), .08);
+      var th = (py + .5)/H*PI, st = Math.sin(th), ct = Math.cos(th);
       for (px = 0; px < W; px++){
+        var ph = (px + .5)/W*PI*2, p0 = -Math.cos(ph)*st, p1 = ct, p2 = Math.sin(ph)*st, dmin = 9, v;
+        for (var k = 0; k < 4; k++){
+          var sm = seams[k];
+          if (sm.g) v = Math.abs(Math.asin(Math.max(-1, Math.min(1, p0*sm.n[0] + p1*sm.n[1] + p2*sm.n[2]))));
+          else v = Math.abs(Math.acos(Math.max(-1, Math.min(1, p0*sm.a[0] + p1*sm.a[1] + p2*sm.a[2]))) - sm.t);
+          if (v < dmin) dmin = v;
+        }
+        var idx = py*W + px, g = Math.min(1, dmin/GROOVE);
+        dist[idx] = dmin;
+        height[idx] = g*g*(3 - 2*g)*(0.55 + peb[idx]*0.45*g);
+      }
+    }
+
+    // 3) manchas suaves de tom, como couro usado
+    var tone = new Float32Array(W*H);
+    for (var b = 0; b < 40; b++){
+      var bx = Math.random()*W, by = Math.random()*H, br = (80 + Math.random()*260)*K, bv = (Math.random() - .5)*0.12;
+      var ya = Math.max(0, by - br|0), yb = Math.min(H, by + br|0), xa = Math.max(0, bx - br|0), xb = Math.min(W, bx + br|0);
+      for (var ty = ya; ty < yb; ty++) for (var tx = xa; tx < xb; tx++){
+        var dd = ((tx-bx)*(tx-bx) + (ty-by)*(ty-by))/(br*br);
+        if (dd < 1) tone[ty*W + tx] += bv*(1-dd)*(1-dd);
+      }
+    }
+
+    var color = new Uint8Array(W*H*4), normal = new Uint8Array(W*H*4);
+    var RW = W/2, RH = H/2, rough = new Uint8Array(RW*RH*4), S = 3.2;
+    for (py = 0; py < H; py++){
+      var sx = Math.max(Math.sin((py + .5)/H*PI), .08), row = (H - 1 - py)*W;
+      for (px = 0; px < W; px++){
+        j = py*W + px;
+        var o = (row + px)*4;
+        // cor: couro laranja-tijolo e canal preto
+        var gg = Math.min(1, dist[j]/GROOVE), shade = (0.86 + peb[j]*0.16)*(1 + tone[j]);
+        var m = gg < 0.78 ? 0 : (gg - 0.78)/0.22; m = m*m*(3 - 2*m);
+        color[o] = Math.min(255, 22 + (196*shade - 22)*m);
+        color[o+1] = Math.min(255, 17 + (84*shade - 17)*m);
+        color[o+2] = Math.min(255, 15 + (36*shade - 15)*m);
+        color[o+3] = 255;
+        // relevo
         var l = height[py*W + (px - 1 + W) % W], rr = height[py*W + (px + 1) % W];
         var u = height[Math.max(0, py-1)*W + px], dn = height[Math.min(H-1, py+1)*W + px];
-        var nx = (l - rr)*S*sx, ny = (dn - u)*S, nz = 1, len = Math.sqrt(nx*nx + ny*ny + 1);
-        var o = (py*W + px)*4;
-        n[o] = (nx/len*.5 + .5)*255; n[o+1] = (ny/len*.5 + .5)*255; n[o+2] = (nz/len*.5 + .5)*255; n[o+3] = 255;
+        var nx = (l - rr)*S*sx, ny = (dn - u)*S, len = Math.sqrt(nx*nx + ny*ny + 1);
+        normal[o] = (nx/len*.5 + .5)*255; normal[o+1] = (ny/len*.5 + .5)*255; normal[o+2] = (1/len*.5 + .5)*255; normal[o+3] = 255;
       }
     }
-    ng.putImageData(nimg, 0, 0);
-
-    // 5) aspereza: borracha do canal mais fosca que o couro
-    var rc = document.createElement('canvas'); rc.width = W/2; rc.height = H/2;
-    var rg = rc.getContext('2d'), rimg = rg.createImageData(W/2, H/2), rd = rimg.data;
-    for (py = 0; py < H/2; py++) for (px = 0; px < W/2; px++){
-      var q = (py*2)*W + px*2, gv = Math.min(1, dist[q]/GROOVE), pvv = peb[q*4]/255;
-      var rough = gv < .8 ? 0.85 : 0.62 - pvv*0.12;
-      var oo = (py*W/2 + px)*4; rd[oo] = rd[oo+1] = rd[oo+2] = rough*255; rd[oo+3] = 255;
+    for (py = 0; py < RH; py++) for (px = 0; px < RW; px++){
+      j = (py*2)*W + px*2;
+      var gv = Math.min(1, dist[j]/GROOVE), rv = gv < .8 ? 0.85 : 0.62 - peb[j]*0.12;
+      var q = ((RH - 1 - py)*RW + px)*4;
+      rough[q] = rough[q+1] = rough[q+2] = rv*255; rough[q+3] = 255;
     }
-    rg.putImageData(rimg, 0, 0);
-    return {color:cc, normal:nc, rough:rc};
+    return {W:W, H:H, color:color, normal:normal, rough:rough};
   }
 
-  // ambiente de estúdio para os reflexos (caixas de luz em volta)
+  // Dispara a geração já, em paralelo com a abertura
+  var W = window.innerWidth < 700 ? 1024 : 2048, mapsData = null, mapsWaiters = [];
+  function gotMaps(d){ mapsData = d; mapsWaiters.forEach(function(f){ f(); }); }
+  try {
+    var src = 'var genMaps=' + genMaps.toString() + ';onmessage=function(e){var r=genMaps(e.data.W,e.data.H);postMessage(r,[r.color.buffer,r.normal.buffer,r.rough.buffer]);};';
+    var wk = new Worker(URL.createObjectURL(new Blob([src], {type:'text/javascript'})));
+    wk.onmessage = function(e){ gotMaps(e.data); wk.terminate(); };
+    wk.onerror = function(){ setTimeout(function(){ gotMaps(genMaps(W, W/2)); }, 0); };
+    wk.postMessage({W:W, H:W/2});
+  } catch(e){
+    setTimeout(function(){ gotMaps(genMaps(W, W/2)); }, 0);
+  }
+
+  // Momentos seguros para trabalho pesado na thread principal: só começa se
+  // couber inteiro na pausa das marcas da garra; senão, espera a abertura acabar.
+  function whenCalm(cost, fn){
+    var I = window.__intro;
+    if (!I || reduce){ fn(); return; }
+    var t = performance.now();
+    if (t < I.holdFrom) setTimeout(function(){ whenCalm(cost, fn); }, I.holdFrom - t);
+    else if (t + cost < I.holdTo) fn();
+    else if (t < I.done) setTimeout(fn, I.done - t + 30);
+    else fn();
+  }
+
+  var gpu = null;   // preenchido por initGPU
+  window.addEventListener('load', function(){
+    if (!window.THREE){ box.classList.add('no3d'); return; }
+    // etapa 1: compila o material (o trecho mais pesado, ~0,5 s) com texturas provisórias
+    whenCalm(650, function(){
+      try { gpu = initGPU(); } catch(e){ box.classList.add('no3d'); return; }
+      // etapa 2: troca pelas texturas reais (~40 ms) assim que estiverem prontas
+      function apply(){ whenCalm(120, function(){ gpu.apply(mapsData); }); }
+      if (mapsData) apply(); else mapsWaiters.push(apply);
+    });
+  });
+
+  // ambiente de estúdio para os reflexos
   function studio(renderer){
     var env = new THREE.Scene();
     env.add(new THREE.Mesh(new THREE.SphereGeometry(20, 32, 16), new THREE.MeshBasicMaterial({color:0x0b0a0b, side:THREE.BackSide})));
@@ -728,44 +741,48 @@ window.addEventListener('load', function(){
       var m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({color:color, side:THREE.DoubleSide}));
       m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m);
     }
-    panel(10, 6, 0xffffff, 6, 8, 8);      // softbox principal, alto à direita
-    panel(6, 10, 0x9a9a9a, -10, 2, 4);     // rebatedor à esquerda
-    panel(8, 3, 0xe23fd6, 4, -2, -10);     // contraluz magenta (cor do time)
-    panel(20, 4, 0x2a2626, 0, -12, 0);     // chão escuro
+    panel(10, 6, 0xffffff, 6, 8, 8);
+    panel(6, 10, 0x9a9a9a, -10, 2, 4);
+    panel(8, 3, 0xe23fd6, 4, -2, -10);
+    panel(20, 4, 0x2a2626, 0, -12, 0);
     var pm = new THREE.PMREMGenerator(renderer);
     var tex = pm.fromScene(env, 0.04).texture;
     pm.dispose();
     return tex;
   }
 
-  function ball(){
-    var r = new THREE.WebGLRenderer({antialias:true, alpha:true});
-    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+  function dataTex(arr, w, h, srgb){
+    var t = new THREE.DataTexture(arr, w, h, THREE.RGBAFormat);
+    t.magFilter = THREE.LinearFilter; t.minFilter = THREE.LinearMipmapLinearFilter;
+    t.generateMipmaps = true; t.wrapS = THREE.RepeatWrapping;
+    if (srgb) t.encoding = THREE.sRGBEncoding;
+    t.needsUpdate = true;
+    return t;
+  }
+
+  function initGPU(){
+    var r = new THREE.WebGLRenderer({antialias:true, alpha:true, powerPreference:'high-performance'});
+    r.setPixelRatio(Math.min(window.devicePixelRatio || 1, 1.5));
     r.outputEncoding = THREE.sRGBEncoding;
     r.toneMapping = THREE.ACESFilmicToneMapping;
     r.toneMappingExposure = 1.05;
     r.physicallyCorrectLights = true;
     r.domElement.setAttribute('role','img');
     r.domElement.setAttribute('aria-label','Bola de basquete em 3D. Arraste para girar.');
+    r.domElement.style.visibility = 'hidden';
     box.appendChild(r.domElement);
 
     var scene = new THREE.Scene(), cam = new THREE.PerspectiveCamera(30, 1, .1, 100);
     cam.position.set(0, 0, 7);
     scene.environment = studio(r);
 
-    var m = maps();
-    var map = new THREE.CanvasTexture(m.color); map.encoding = THREE.sRGBEncoding;
-    var nrm = new THREE.CanvasTexture(m.normal);
-    var rgh = new THREE.CanvasTexture(m.rough);
-    var aniso = r.capabilities.getMaxAnisotropy();
-    [map, nrm, rgh].forEach(function(t){ t.anisotropy = aniso; });
-
-    var mat = new THREE.MeshPhysicalMaterial({
-      map:map, normalMap:nrm, normalScale:new THREE.Vector2(0.9, 0.9),
-      roughnessMap:rgh, roughness:1, metalness:0,
-      clearcoat:0.18, clearcoatRoughness:0.55, envMapIntensity:1
+    // texturas provisórias de 1 pixel: o shader compilado já é o definitivo
+    function px(v, srgb){ var t = new THREE.DataTexture(new Uint8Array([v,v,v,255]), 1, 1, THREE.RGBAFormat); if (srgb) t.encoding = THREE.sRGBEncoding; t.needsUpdate = true; return t; }
+    var mat = new THREE.MeshStandardMaterial({
+      map:px(160, true), normalMap:px(128), normalScale:new THREE.Vector2(0.9, 0.9),
+      roughnessMap:px(160), roughness:1, metalness:0, envMapIntensity:1.1
     });
-    var mesh = new THREE.Mesh(new THREE.SphereGeometry(1.45, 128, 128), mat);
+    var mesh = new THREE.Mesh(new THREE.SphereGeometry(1.45, 96, 96), mat);
     mesh.rotation.set(.45, -.5, .2);
     var pivot = new THREE.Group(); pivot.add(mesh); scene.add(pivot);
 
@@ -777,6 +794,23 @@ window.addEventListener('load', function(){
     size();
     if ('ResizeObserver' in window) new ResizeObserver(size).observe(box); else window.addEventListener('resize', size);
 
+    r.compile(scene, cam);
+    r.render(scene, cam);
+
+    var textured = false;
+    function apply(d){
+      var aniso = Math.min(8, r.capabilities.getMaxAnisotropy());
+      var old = [mat.map, mat.normalMap, mat.roughnessMap];
+      mat.map = dataTex(d.color, d.W, d.H, true);
+      mat.normalMap = dataTex(d.normal, d.W, d.H);
+      mat.roughnessMap = dataTex(d.rough, d.W/2, d.H/2);
+      [mat.map, mat.normalMap, mat.roughnessMap].forEach(function(t){ t.anisotropy = aniso; });
+      old.forEach(function(t){ t.dispose(); });
+      r.render(scene, cam);          // envia as texturas para a GPU agora
+      r.domElement.style.visibility = '';
+      textured = true;
+    }
+
     var drag = false, lx = 0, ly = 0, vx = 0, vy = 0, mx = 0, my = 0;
     r.domElement.addEventListener('pointerdown', function(e){ drag = true; lx = e.clientX; ly = e.clientY; });
     window.addEventListener('pointerup', function(){ drag = false; });
@@ -785,30 +819,34 @@ window.addEventListener('load', function(){
       if (drag){ vy += (e.clientX - lx)*.0022; vx += (e.clientY - ly)*.0022; lx = e.clientX; ly = e.clientY; }
     }, {passive:true});
 
-    var visible = true, drop = null;
+    var visible = true, drop = null, last = null;
     if ('IntersectionObserver' in window) new IntersectionObserver(function(en){ visible = en[0].isIntersecting; }).observe(box);
     function frame(now){
       requestAnimationFrame(frame);
-      if (!visible) return;
-      var y = 0;
-      if (!document.body.classList.contains('ready')) y = 5;
-      else if (!reduce){
+      // não desenha escondida: sem textura, atrás da abertura ou fora da tela
+      if (!textured || !visible || !document.body.classList.contains('ready')){ last = now; return; }
+      // passo de tempo real: a animação não acelera nem trava se um quadro atrasar
+      var dt = Math.min(0.05, last === null ? 0.016 : (now - last)/1000); last = now;
+      var k = dt*60, y = 0;
+      if (!reduce){
         if (drop === null) drop = now;
-        var d = (now - drop)/1000;
-        if (d < 1.6) y = Math.abs(Math.cos(d*6.8)) * Math.exp(-d*3.2) * 3.6;
-        else y = Math.sin((d - 1.6)*1.8)*.05;
+        var s = (now - drop)/1000;
+        if (s < 1.6) y = Math.abs(Math.cos(s*6.8))*Math.exp(-s*3.2)*3.6;
+        else y = Math.sin((s - 1.6)*1.8)*.05;
       }
-      mesh.rotation.y += (reduce ? .0015 : .004) + vy;
-      mesh.rotation.x += vx;
-      vx *= .93; vy *= .93;
+      mesh.rotation.y += ((reduce ? .0015 : .004) + vy)*k;
+      mesh.rotation.x += vx*k;
+      var damp = Math.pow(.93, k); vx *= damp; vy *= damp;
       pivot.position.y = y;
-      pivot.rotation.x += (my*.3 - pivot.rotation.x)*.05;
-      pivot.rotation.z += (-mx*.2 - pivot.rotation.z)*.05;
+      var e = 1 - Math.pow(.95, k);
+      pivot.rotation.x += (my*.3 - pivot.rotation.x)*e;
+      pivot.rotation.z += (-mx*.2 - pivot.rotation.z)*e;
       r.render(scene, cam);
     }
     requestAnimationFrame(frame);
+    return {apply:apply};
   }
-});
+})();
 </script>
 </body>
 </html>
