@@ -164,16 +164,21 @@ h1,h2,h3,p{margin:0}
 .table-scroll{overflow-x:auto;position:relative}
 
 #elenco{overflow:hidden;overflow:clip}
-/* elenco: anel 3D de cards (ideia do carrossel de ilkhoeri no Uiverse, adaptada)
-   O anel gira sozinho; arrasta para girar; clique abre a ficha da atleta. */
-.ring-stage{--w:clamp(112px,10.5vw,150px);position:relative;z-index:2;height:calc(var(--w) * 3.7);perspective:calc(var(--w) * 3.5);perspective-origin:50% 34%;overflow:visible;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+/* elenco: coverflow de ponta a ponta. O card da frente fica em destaque;
+   os de trás vêm em camadas, menores, inclinados para o centro e com leve desfoque. */
+.ring-stage{--w:clamp(200px,16vw,250px);position:relative;z-index:2;height:calc(var(--w) * 1.42 + 110px);overflow:visible;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
 .ring-stage:focus-visible{box-shadow:inset 0 0 0 3px var(--magenta)}
 .ring-stage.dragging{cursor:grabbing}
 .ring-stage.dragging .pcard{pointer-events:none}
-.ring{position:absolute;z-index:1;left:50%;top:41%;width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2);transform-style:preserve-3d;transform:rotateX(-11deg);will-change:transform}
-.ring .slot{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(calc(var(--i) * var(--step, 45deg))) translateZ(var(--r, 280px))}
+.ring{position:absolute;z-index:1;left:50%;top:calc(50% - 16px);width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2)}
+.ring .slot{position:absolute;inset:0;transition:transform .8s cubic-bezier(.22,.8,.2,1),filter .8s cubic-bezier(.22,.8,.2,1),opacity .5s;will-change:transform,filter}
+.ring .slot.jump{transition:none}
+.ring .pc-shade{transition:opacity .8s cubic-bezier(.22,.8,.2,1)}
+/* brilho laranja sob o card da frente */
+.ring .slot::after{content:"";position:absolute;left:10%;right:10%;bottom:-26px;height:26px;background:radial-gradient(closest-side,rgba(242,107,29,.6),transparent);opacity:0;transition:opacity .6s}
+.ring .slot.is-front::after{opacity:1}
 /* chão: círculo central da quadra visto em perspectiva */
-.ring-floor{position:absolute;z-index:0;left:50%;bottom:-2%;width:min(118vw,calc(var(--w) * 8));aspect-ratio:4.6/1;transform:translateX(-50%);border-radius:50%;border:2px solid rgba(255,255,255,.12);
+.ring-floor{position:absolute;z-index:0;left:50%;bottom:0;width:min(100vw,calc(var(--w) * 6.5));aspect-ratio:5.5/1;transform:translateX(-50%);border-radius:50%;border:2px solid rgba(255,255,255,.12);
   background:radial-gradient(closest-side,rgba(242,107,29,.22),transparent 70%);pointer-events:none}
 .ring-floor::after{content:"";position:absolute;inset:30% 38%;border-radius:50%;border:2px solid rgba(255,255,255,.1)}
 .ring-ctrl{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;gap:18px;margin-top:6px}
@@ -237,7 +242,7 @@ h1,h2,h3,p{margin:0}
 .ficha-close:hover{background:var(--orange);color:#000}
 .ficha-close svg{width:18px;height:18px}
 @media (max-width:860px){
-  .ring-stage{--w:clamp(104px,30vw,128px)}
+  .ring-stage{--w:clamp(170px,50vw,220px)}
   .ficha-in{grid-template-columns:minmax(0,1fr)}
   .ficha-art{--w:260px;min-height:300px}
 }
@@ -516,10 +521,10 @@ footer a:hover{color:#fff}
     <div class="wrap">
       <div class="section-head">
         <h2 class="title" id="elenco-title">Elenco</h2>
-        <p class="hint">Bixetes, veteranas e pós de vários cursos da FFLCH. Gira o elenco e toca numa atleta para ver a ficha dela.</p>
+        <p class="hint">Bixetes, veteranas e pós de vários cursos da FFLCH. Passa pro lado e toca na atleta do meio para ver a ficha dela.</p>
       </div>
     </div>
-    <div class="ring-stage" id="ring-stage" role="region" aria-roledescription="carrossel" aria-label="Elenco em carrossel 3D. Use as setas do teclado para girar" tabindex="0">
+    <div class="ring-stage" id="ring-stage" role="region" aria-roledescription="carrossel" aria-label="Elenco em carrossel. Use as setas do teclado para navegar" tabindex="0">
       <div class="ring" id="ring"></div>
       <div class="ring-floor" aria-hidden="true"></div>
     </div>
@@ -529,7 +534,7 @@ footer a:hover{color:#fff}
         <p class="ring-now" aria-live="polite"><b id="ring-num">01 / 01</b><span id="ring-name"></span></p>
         <button type="button" id="ring-next" aria-label="Próxima atleta" aria-controls="ring-stage"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 10h13M11 5l5 5-5 5"/></svg></button>
       </div>
-      <p class="ring-tip" aria-hidden="true">arrasta pra girar!</p>
+      <p class="ring-tip" aria-hidden="true">arrasta pro lado!</p>
     </div>
   </section>
 
@@ -781,7 +786,7 @@ var DADOS = {
     return '<tr><td>' + esc(r.data) + '</td><td>' + esc(r.adversario) + '</td><td>' + esc(r.campeonato) + '</td><td class="score">' + pad(r.nosso) + ' – ' + pad(r.deles) + '</td><td>' + tag + '</td></tr>';
   }).join('');
 
-  /* ---- elenco: anel 3D ---- */
+  /* ---- elenco: coverflow ---- */
   var roster = D.elenco || [];
   var SCHEMES = ['c-k', 'c-o', 'c-p'];
   var COURT_SVG = '<svg class="pc-court" viewBox="0 0 500 470" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="170" y="1" width="160" height="190"/><circle cx="250" cy="191" r="60"/><path d="M30 1v140a237.5 237.5 0 0 0 440 0V1"/><circle cx="250" cy="52" r="9"/></svg>';
@@ -797,113 +802,66 @@ var DADOS = {
   (function(){
     var count = roster.length;
     if (!count) return;
-    var stage = document.getElementById('ring-stage'), ring = document.getElementById('ring');
+    var stage = document.getElementById('ring-stage'), track = document.getElementById('ring');
     var frontNumber = document.getElementById('ring-num'), frontName = document.getElementById('ring-name');
-    var STEP = 360 / count, AUTO_SPEED = 360 / 48, RAD = Math.PI / 180;
+    var PERSPECTIVE = 1200, DEPTH = 130, AUTO_MS = 3200;
+    var SPREAD = [0, .98, 1.78, 2.5, 3.1];   // distância na tela, em larguras de card, de cada camada até o centro
 
-    ring.innerHTML = roster.map(function(player, i){
-      return '<div class="slot" style="--i:' + i + '"><button class="pcard ' + SCHEMES[i % 3] + '" type="button" data-i="' + i + '" aria-haspopup="dialog" ' +
+    track.innerHTML = roster.map(function(player, i){
+      return '<div class="slot"><button class="pcard ' + SCHEMES[i % 3] + '" type="button" data-i="' + i + '" aria-haspopup="dialog" ' +
         'aria-label="' + esc(player.nome) + ', camisa ' + esc(player.numero) + '. Abrir ficha">' + playerCard(player) +
         '<span class="pc-shade" aria-hidden="true"></span></button></div>';
     }).join('');
-    var slots = Array.prototype.slice.call(ring.children);
+    var slots = Array.prototype.slice.call(track.children);
     var shades = slots.map(function(slot){ return slot.querySelector('.pc-shade'); });
-    var shadeLevels = [];
+    var current = 0, offsets = [], autoTimer = 0, visible = true, hovering = false, focused = false;
 
-    var angle = 0, target = null, radius = 0, frontIndex = -1;
-    var dragging = false, hovering = false, focused = false, lastInteraction = 0;
-
-    function layout(){
-      var width = slots[0].offsetWidth;
-      radius = count < 3 ? width : width / 2 / Math.tan(Math.PI / count) + width / 2;
-      ring.style.setProperty('--r', radius + 'px');
-      ring.style.setProperty('--step', STEP + 'deg');
+    function offsetOf(i){
+      var d = ((i - current) % count + count) % count;
+      return d > count / 2 ? d - count : d;
     }
-
-    // Só transform e opacity mudam por quadro: a placa de vídeo resolve sem recalcular estilo dos cards.
     function render(){
-      ring.style.transform = 'rotateX(-11deg) rotateY(' + angle.toFixed(2) + 'deg)';
-      for (var i = 0; i < count; i++){
-        var facing = (Math.cos((i * STEP + angle) * RAD) + 1) / 2;
-        var level = Math.round(78 * (1 - Math.pow(facing, 1.4))) / 100;
-        if (level !== shadeLevels[i]){ shadeLevels[i] = level; shades[i].style.opacity = level; }
-      }
-      var front = ((Math.round(-angle / STEP) % count) + count) % count;
-      if (front === frontIndex) return;
-      if (frontIndex >= 0) slots[frontIndex].classList.remove('is-front');
-      slots[front].classList.add('is-front');
-      frontIndex = front;
-      frontNumber.textContent = pad(front + 1) + ' / ' + pad(count);
-      frontName.textContent = roster[front].nome;
+      var width = slots[0].offsetWidth, spread = innerWidth < 861 ? .62 : 1;
+      slots.forEach(function(slot, i){
+        var d = offsetOf(i), layer = Math.min(Math.abs(d), SPREAD.length - 1), side = d < 0 ? -1 : 1;
+        var z = -layer * DEPTH, x = side * SPREAD[layer] * spread * width * (PERSPECTIVE - z) / PERSPECTIVE;
+        // o card que dá a volta pela borda troca de lado sem atravessar a faixa
+        slot.classList.toggle('jump', offsets[i] !== undefined && Math.abs(offsets[i] - d) > 1);
+        offsets[i] = d;
+        slot.style.transform = 'perspective(' + PERSPECTIVE + 'px) translateX(' + x.toFixed(1) + 'px) translateZ(' + z + 'px) rotateY(' + (-side * Math.min(layer, 1) * 14) + 'deg)';
+        slot.style.filter = layer ? 'blur(' + (layer * 1.15).toFixed(2) + 'px)' : 'none';
+        slot.style.opacity = layer > 3 ? 0 : 1;
+        slot.style.zIndex = 10 - layer;
+        slot.classList.toggle('is-front', d === 0);
+        shades[i].style.opacity = Math.min(.68, layer * .22);
+      });
+      frontNumber.textContent = pad(current + 1) + ' / ' + pad(count);
+      frontName.textContent = roster[current].nome;
+    }
+    function goTo(index){ current = ((index % count) + count) % count; render(); restartAuto(); }
+    function step(direction){ goTo(current + direction); }
+    function restartAuto(){
+      clearTimeout(autoTimer);
+      if (reduce || !visible || hovering || focused || document.hidden || fichaDialog.open) return;
+      autoTimer = setTimeout(function(){ step(1); }, AUTO_MS);
     }
 
-    function touch(){ lastInteraction = performance.now(); wake(); }
-    function goTo(index){
-      var desired = -index * STEP;
-      target = desired + Math.round((angle - desired) / 360) * 360;
-      touch();
-    }
-    function stepBy(direction){
-      target = (Math.round((target === null ? angle : target) / STEP) - direction) * STEP;
-      touch();
-    }
-
-    var running = false, visible = true, lastTime = 0, lastScrollY = 0;
-    function tick(now){
-      var dt = Math.min(64, now - lastTime) / 1000, scrolled = scrollY - lastScrollY;
-      lastTime = now; lastScrollY = scrollY;
-      if (target !== null){
-        var gap = target - angle;
-        if (reduce || Math.abs(gap) < .05){ angle = target; target = null; }
-        else angle += gap * Math.min(1, dt * 7);
-      } else if (!reduce && !dragging){
-        if (Math.abs(scrolled) < 400) angle -= scrolled * .22;
-        if (!hovering && !focused && !fichaDialog.open && now - lastInteraction > 2500) angle -= AUTO_SPEED * dt;
-      }
-      render();
-      running = visible && !document.hidden && (!reduce || dragging || target !== null);
-      if (running) requestAnimationFrame(tick);
-    }
-    function wake(){
-      if (running || !visible) return;
-      running = true; lastTime = performance.now(); lastScrollY = scrollY;
-      requestAnimationFrame(tick);
-    }
-
-    layout(); render();
-    addEventListener('resize', layout);
-    if ('IntersectionObserver' in window){
-      new IntersectionObserver(function(entries){ visible = entries[0].isIntersecting; wake(); }).observe(stage);
-    }
-    document.addEventListener('visibilitychange', wake);
-    wake();
-
-    var pointerId = null, startX = 0, startAngle = 0, lastX = 0, lastMoveTime = 0, velocity = 0, travel = 0, suppressClick = false;
+    // arrastar (mouse ou dedo): cada 60 px de arraste passa um card
+    var dragX = null, dragged = false, suppressClick = false;
     stage.addEventListener('pointerdown', function(e){
       if (e.button !== 0) return;
-      dragging = true; pointerId = e.pointerId; target = null;
-      startX = lastX = e.clientX; startAngle = angle; lastMoveTime = performance.now();
-      velocity = travel = 0;
-      wake();
+      dragX = e.clientX; dragged = false;
     });
     addEventListener('pointermove', function(e){
-      if (!dragging || e.pointerId !== pointerId) return;
-      var degreesPerPixel = 180 / (Math.PI * radius) * 1.15, now = performance.now();
-      travel = Math.max(travel, Math.abs(e.clientX - startX));
-      if (travel > 6) stage.classList.add('dragging');
-      angle = startAngle + (e.clientX - startX) * degreesPerPixel;
-      velocity = (e.clientX - lastX) * degreesPerPixel / Math.max(.001, (now - lastMoveTime) / 1000);
-      lastX = e.clientX; lastMoveTime = now;
+      if (dragX === null || Math.abs(e.clientX - dragX) < 60) return;
+      step(e.clientX < dragX ? 1 : -1);
+      dragX = e.clientX; dragged = true;
+      stage.classList.add('dragging');
     });
-    function endDrag(e){
-      if (!dragging || e.pointerId !== pointerId) return;
-      dragging = false;
+    function endDrag(){
+      if (dragX === null) return;
+      dragX = null; suppressClick = dragged;
       stage.classList.remove('dragging');
-      suppressClick = travel > 6;
-      // projeta onde o embalo pararia e encaixa no card mais próximo
-      var momentum = reduce ? 0 : Math.max(-500, Math.min(500, velocity)) * .35;
-      target = Math.round((angle + momentum) / STEP) * STEP;
-      touch();
     }
     addEventListener('pointerup', endDrag);
     addEventListener('pointercancel', endDrag);
@@ -912,27 +870,34 @@ var DADOS = {
       e.preventDefault(); e.stopPropagation(); suppressClick = false;
     }, true);
 
-    stage.addEventListener('mouseenter', function(){ hovering = true; });
-    stage.addEventListener('mouseleave', function(){ hovering = false; touch(); });
+    stage.addEventListener('pointerenter', function(e){ hovering = e.pointerType === 'mouse'; restartAuto(); });
+    stage.addEventListener('pointerleave', function(){ hovering = false; restartAuto(); });
     stage.addEventListener('focusin', function(e){
-      focused = true;
+      focused = e.target.matches(':focus-visible');   // clique de mouse não pausa o carrossel
       var card = e.target.closest('.pcard');
-      if (card) goTo(+card.dataset.i);
+      if (focused && card && +card.dataset.i !== current) goTo(+card.dataset.i); else restartAuto();
     });
-    stage.addEventListener('focusout', function(){ focused = false; touch(); });
+    stage.addEventListener('focusout', function(){ focused = false; restartAuto(); });
     stage.addEventListener('keydown', function(e){
       if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
       e.preventDefault();
-      stepBy(e.key === 'ArrowRight' ? 1 : -1);
+      step(e.key === 'ArrowRight' ? 1 : -1);
     });
-    document.getElementById('ring-prev').addEventListener('click', function(){ stepBy(-1); });
-    document.getElementById('ring-next').addEventListener('click', function(){ stepBy(1); });
-    ring.addEventListener('click', function(e){
+    document.getElementById('ring-prev').addEventListener('click', function(){ step(-1); });
+    document.getElementById('ring-next').addEventListener('click', function(){ step(1); });
+    track.addEventListener('click', function(e){
       var card = e.target.closest('.pcard');
       if (!card) return;
-      goTo(+card.dataset.i);
-      openFicha(+card.dataset.i, card);
+      var index = +card.dataset.i;
+      if (index === current) openFicha(index, card); else goTo(index);
     });
+    document.addEventListener('visibilitychange', restartAuto);
+    fichaDialog.addEventListener('close', restartAuto);
+    addEventListener('resize', render);
+    if ('IntersectionObserver' in window){
+      new IntersectionObserver(function(entries){ visible = entries[0].isIntersecting; restartAuto(); }).observe(stage);
+    }
+    render();
   })();
 
   /* ---- ficha da atleta ---- */
