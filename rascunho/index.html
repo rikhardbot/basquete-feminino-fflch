@@ -164,38 +164,87 @@ h1,h2,h3,p{margin:0}
 .res.v{background:var(--orange);color:#000}.res.d{background:#fff;color:#000}
 .table-scroll{overflow-x:auto;position:relative}
 
-/* elenco: varal com as camisas nos cabides */
-.varal-wrap{position:relative}
-.varal{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;cursor:grab;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
-  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
-.varal::-webkit-scrollbar{display:none}
-.varal.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
-.varal ul{list-style:none;margin:0;display:flex;gap:clamp(10px,2vw,22px);width:max-content;position:relative;padding:0 max(6vw,24px) 40px}
-/* a corda atravessa o varal inteiro */
-.varal ul::before{content:"";position:absolute;left:0;right:0;top:3px;height:5px;border-radius:3px;
-  background:repeating-linear-gradient(115deg,#D9C9AE 0 5px,#8E7B62 5px 8px);box-shadow:0 3px 6px rgba(0,0,0,.6)}
-.peg{flex:none;width:clamp(150px,21vw,230px);scroll-snap-align:center}
-.swing{display:block;transform-origin:50% 4px;will-change:transform}
-.hanger{display:block;width:100%;height:auto;position:relative;z-index:0}
-.jersey{position:relative;z-index:1;display:block;width:100%;margin-top:-10%;perspective:900px;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left;-webkit-tap-highlight-color:transparent}
-.varal.dragging .jersey{cursor:grabbing}
-.jersey .inner{position:relative;display:block;aspect-ratio:200/230;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,1.3,.5,1)}
-.jersey[aria-pressed="true"] .inner{transform:rotateY(180deg)}
-.jersey .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;filter:drop-shadow(0 14px 14px rgba(0,0,0,.55))}
-.jersey .face > svg{position:absolute;inset:0;width:100%;height:100%}
-.jersey .stack{position:absolute;inset:24% 0 0;display:grid;justify-items:center;align-content:start;gap:6px;color:#000;text-align:center}
-.jersey .nm{font:400 clamp(13px,1.4vw,17px)/1 var(--jersey);letter-spacing:.04em}
-.jersey .no{font:400 clamp(58px,6.6vw,88px)/.9 var(--jersey)}
-.jersey .back{transform:rotateY(180deg)}
-.jersey .back .stack{inset:20% 12% 0;gap:4px}
-.jersey .back .ph{width:46%;aspect-ratio:1;border-radius:50%;border:2px dashed rgba(0,0,0,.5);display:grid;place-items:center;font:700 11px/1.2 var(--display);padding:6px;margin-bottom:6px}
-.jersey .back strong{font:400 clamp(15px,1.5vw,18px)/1.1 var(--jersey)}
-.jersey .back small{font:600 13px/1.3 var(--display)}
-.jersey:hover .front svg path:first-child{fill:#FF7A2E}
-.varal-ctrl{display:flex;align-items:center;gap:10px;margin-top:6px}
-.varal-ctrl button{width:48px;height:48px;border-radius:50%;border:1px solid #fff;background:none;color:#fff;font:700 22px/1 var(--display);cursor:pointer}
-.varal-ctrl button:hover{background:#fff;color:#000}
-.varal-ctrl .pull{font:400 20px/1 var(--hand);color:var(--magenta);margin-left:8px}
+/* elenco: anel 3D de cards (ideia do carrossel de ilkhoeri no Uiverse, adaptada)
+   O anel gira sozinho; arrasta para girar; clique abre a ficha da atleta. */
+.ring-stage{--w:clamp(150px,15vw,210px);position:relative;height:calc(var(--w) * 2.45);perspective:1100px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+.ring-stage:focus-visible{box-shadow:inset 0 0 0 3px var(--magenta)}
+.ring-stage.dragging{cursor:grabbing}
+.ring-stage.dragging .pcard{pointer-events:none}
+.ring{position:absolute;z-index:1;left:50%;top:44%;width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2);transform-style:preserve-3d;transform:rotateX(-8deg)}
+.ring .slot{position:absolute;inset:0;transform-style:preserve-3d;--dim:0;transform:rotateY(calc(var(--i) * var(--step, 45deg))) translateZ(var(--r, 280px))}
+/* chão: círculo central da quadra visto em perspectiva */
+.ring-floor{position:absolute;z-index:0;left:50%;bottom:5%;width:min(86vw,820px);aspect-ratio:5/1;transform:translateX(-50%);border-radius:50%;border:2px solid rgba(255,255,255,.12);
+  background:radial-gradient(closest-side,rgba(242,107,29,.22),transparent 70%);pointer-events:none}
+.ring-floor::after{content:"";position:absolute;inset:30% 38%;border-radius:50%;border:2px solid rgba(255,255,255,.1)}
+.ring-ctrl{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:6px}
+.ring-ctrl button{width:52px;height:52px;display:grid;place-items:center;border:1px solid #fff;border-radius:50%;background:none;color:#fff;cursor:pointer;transition:background-color .2s,color .2s}
+.ring-ctrl button:hover{background:#fff;color:#000}
+.ring-ctrl button svg{width:20px;height:20px}
+.ring-now{min-width:190px;text-align:center}
+.ring-now b{display:block;font:400 15px/1 var(--jersey);color:var(--orange)}
+.ring-now span{display:block;margin-top:6px;font:900 20px/1 var(--display);font-stretch:118%;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:240px}
+.ring-tip{text-align:center;margin-top:14px;font:400 19px/1 var(--hand);color:var(--magenta)}
+
+/* card da atleta */
+.pcard{--bg:var(--coal);--fg:#fff;--num-c:var(--orange);--sub:var(--grey);--line:rgba(255,255,255,.16);
+  position:absolute;inset:0;display:block;width:100%;height:100%;padding:0;border:0;cursor:pointer;text-align:left;color:var(--fg);background:var(--bg);overflow:hidden;font:inherit;
+  clip-path:polygon(0 0,calc(100% - 20px) 0,100% 20px,100% 100%,0 100%);-webkit-tap-highlight-color:transparent;transition:filter .3s;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden}
+/* cards de lado ficam mais escuros, como se saíssem da luz */
+.slot .pcard::after{content:"";position:absolute;inset:0;z-index:5;background:#000;opacity:var(--dim);pointer-events:none}
+.pcard.c-o{--bg:var(--orange);--fg:#000;--num-c:#000;--sub:rgba(0,0,0,.72);--line:rgba(0,0,0,.28)}
+.pcard.c-p{--bg:var(--paper);--fg:#000;--num-c:var(--orange-ink);--sub:#4E4749;--line:rgba(0,0,0,.2)}
+.pcard.c-k{box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
+.pcard::before{content:"";position:absolute;inset:0;background:radial-gradient(currentColor 1px,transparent 1.5px) 0 0/7px 7px;opacity:.14;
+  -webkit-mask-image:linear-gradient(200deg,#000 0,transparent 42%);mask-image:linear-gradient(200deg,#000 0,transparent 42%);pointer-events:none}
+.pcard:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--magenta)}
+.slot:not(.is-front) .pcard:hover{filter:brightness(1.12)}
+.pc-top{position:absolute;left:14px;right:28px;top:12px;z-index:3;display:flex;justify-content:space-between;gap:8px;font:700 9px/1.2 var(--display);letter-spacing:.16em;text-transform:uppercase;color:var(--sub)}
+.pc-num{position:absolute;z-index:1;right:-.07em;top:.2em;font:400 calc(var(--w) * .95)/.8 var(--jersey);letter-spacing:-.06em;color:var(--num-c)}
+.pcard.c-k .pc-num{color:transparent;-webkit-text-stroke:2px var(--orange)}
+.pc-court{position:absolute;z-index:0;left:-30%;bottom:-6%;width:130%;height:auto;color:var(--line)}
+.pc-photo{position:absolute;z-index:2;inset:12% 0 0;width:100%;height:88%;object-fit:cover;object-position:50% 20%;filter:grayscale(1) contrast(1.08);mix-blend-mode:multiply}
+.pcard.c-k .pc-photo{mix-blend-mode:normal;filter:grayscale(1) contrast(1.1) brightness(.92)}
+.pc-foot{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:12px 14px 14px;border-top:1px solid var(--line);background:var(--bg)}
+.pc-name{display:block;font:900 calc(var(--w) * .14)/.92 var(--display);font-stretch:62%;text-transform:uppercase}
+.pc-meta{display:flex;justify-content:space-between;gap:8px;margin-top:6px;font:600 11px/1.25 var(--display);color:var(--sub)}
+
+/* ficha da atleta (modal) */
+.ficha{padding:0;border:0;background:transparent;color:#fff;max-width:min(980px,calc(100vw - 32px));width:100%;max-height:calc(100dvh - 32px);overflow:visible}
+.ficha::backdrop{background:rgba(0,0,0,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fade .3s ease}
+.ficha[open] .ficha-in{animation:pop .45s cubic-bezier(.2,.8,.2,1)}
+.ficha.closing .ficha-in{animation:pop .25s ease reverse forwards}
+.ficha.closing::backdrop{animation:fade .25s ease reverse forwards}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.98)}}
+.ficha-in{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);background:#0C0B0B;border:1px solid var(--rule);max-height:calc(100dvh - 32px);overflow:auto}
+.ficha-art{--w:340px;position:relative;min-height:440px;overflow:hidden}
+.ficha-art .pcard{cursor:default;clip-path:none}
+.ficha-art .pc-foot{display:none}
+.ficha-info{display:flex;flex-direction:column;padding:clamp(24px,4vw,48px)}
+.ficha-info .kicker{margin:0}
+.ficha-num{font:400 22px/1 var(--jersey);color:var(--orange);margin-top:22px}
+.ficha-info h3{font:900 clamp(44px,5.6vw,80px)/.9 var(--display);font-stretch:62%;text-transform:uppercase;margin-top:10px}
+.ficha-info dl{margin:28px 0 0;border-top:1px solid var(--rule)}
+.ficha-info dl div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.ficha-info dt{font:700 11px/1.6 var(--display);letter-spacing:.14em;text-transform:uppercase;color:var(--grey)}
+.ficha-info dd{margin:0;font-weight:600}
+.ficha-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:32px}
+.ficha-nav button{min-height:48px;padding:0 18px;border:1px solid #fff;border-radius:999px;background:none;color:#fff;font:800 15px/1 var(--display);font-stretch:112%;cursor:pointer;white-space:nowrap;transition:background-color .2s,color .2s}
+.ficha-nav button:hover{background:#fff;color:#000}
+.ficha-nav span{font:400 14px/1 var(--jersey);color:var(--grey);white-space:nowrap}
+.ficha-close{position:absolute;top:12px;right:12px;z-index:5;width:46px;height:46px;display:grid;place-items:center;border:1px solid var(--rule);border-radius:50%;background:#0C0B0B;color:#fff;cursor:pointer;transition:background-color .2s,color .2s}
+.ficha-close:hover{background:var(--orange);color:#000}
+.ficha-close svg{width:18px;height:18px}
+@media (max-width:860px){
+  .ring-stage{--w:clamp(140px,40vw,180px);perspective:800px}
+  .ficha-in{grid-template-columns:minmax(0,1fr)}
+  .ficha-art{--w:260px;min-height:300px}
+  body.modal-on .dock{transform:translateY(110%)}
+}
+@media (max-width:420px){
+  .ficha-nav{gap:8px}.ficha-nav button{flex:1;padding:0 8px}.ficha-nav span{display:none}
+}
 .hint{color:var(--grey);font-size:15px}
 
 /* treinos: página de zine */
@@ -446,18 +495,40 @@ footer a:hover{color:#fff}
     <div class="wrap">
       <div class="section-head">
         <h2 class="title" id="elenco-title">Elenco</h2>
-        <p class="hint">Bixetes, veteranas e pós de vários cursos da FFLCH. Puxa o varal pro lado e toca numa camisa para ver quem joga com ela.</p>
-      </div>
-      <div class="varal-wrap">
-        <div class="varal" id="varal" role="region" aria-label="Varal com as camisas do elenco" tabindex="0"><ul id="jerseys"></ul></div>
-        <div class="varal-ctrl">
-          <button type="button" id="varal-prev" aria-label="Camisas anteriores">&larr;</button>
-          <button type="button" id="varal-next" aria-label="Próximas camisas">&rarr;</button>
-          <span class="pull" aria-hidden="true">puxa o varal!</span>
-        </div>
+        <p class="hint">Bixetes, veteranas e pós de vários cursos da FFLCH. Gira o elenco e toca numa atleta para ver a ficha dela.</p>
       </div>
     </div>
+    <div class="ring-stage" id="ring-stage" role="region" aria-roledescription="carrossel" aria-label="Elenco em carrossel 3D. Use as setas do teclado para girar" tabindex="0">
+      <div class="ring" id="ring"></div>
+      <div class="ring-floor" aria-hidden="true"></div>
+    </div>
+    <div class="wrap">
+      <div class="ring-ctrl">
+        <button type="button" id="ring-prev" aria-label="Atleta anterior" aria-controls="ring-stage"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M17 10H4M9 5l-5 5 5 5"/></svg></button>
+        <p class="ring-now" aria-live="polite"><b id="ring-num">01 / 01</b><span id="ring-name"></span></p>
+        <button type="button" id="ring-next" aria-label="Próxima atleta" aria-controls="ring-stage"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 10h13M11 5l5 5-5 5"/></svg></button>
+      </div>
+      <p class="ring-tip" aria-hidden="true">arrasta pra girar!</p>
+    </div>
   </section>
+
+  <dialog class="ficha" id="ficha" aria-labelledby="ficha-nome">
+    <div class="ficha-in">
+      <div class="ficha-art" id="ficha-art"></div>
+      <div class="ficha-info">
+        <span class="kicker">Ficha da atleta</span>
+        <p class="ficha-num" id="ficha-num"></p>
+        <h3 id="ficha-nome"></h3>
+        <dl id="ficha-dl"></dl>
+        <div class="ficha-nav">
+          <button type="button" id="ficha-prev">← Anterior</button>
+          <span id="ficha-count"></span>
+          <button type="button" id="ficha-next">Próxima →</button>
+        </div>
+      </div>
+      <button class="ficha-close" type="button" id="ficha-close" aria-label="Fechar ficha"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 4l12 12M16 4 4 16"/></svg></button>
+    </div>
+  </dialog>
 
   <!-- JOGOS -->
   <section class="section" id="jogos" aria-labelledby="jogos-title">
@@ -617,15 +688,16 @@ var DADOS = {
     { data: "00/00", adversario: "Adversário", campeonato: "Campeonato", nosso: 0, deles: 0 },
     { data: "00/00", adversario: "Adversário", campeonato: "Campeonato", nosso: 0, deles: 0 }
   ],
+  // "foto" é opcional: caminho de uma foto real (ex.: "fotos/ana.jpg"). Sem foto, o card usa o número da camisa.
   elenco: [
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" },
-    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso" }
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+    { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" }
   ],
   // diaSemana: 0 = domingo, 1 = segunda ... 6 = sábado. Com ele preenchido, o site avisa "hoje tem treino".
   treinos: [
@@ -692,94 +764,167 @@ var DADOS = {
     return '<tr><td>' + esc(r.data) + '</td><td>' + esc(r.adversario) + '</td><td>' + esc(r.campeonato) + '</td><td class="score">' + pad(r.nosso) + ' – ' + pad(r.deles) + '</td><td>' + tag + '</td></tr>';
   }).join('');
 
-  function shirt(fill){
-    return '<svg viewBox="0 0 200 230" aria-hidden="true"><path fill="' + fill + '" d="M58 2c10 18 74 18 84 0l30 8c-2 34 6 56 28 66v152H0V76c22-10 30-32 28-66z"/><path d="M58 2c10 18 74 18 84 0" fill="none" stroke="#000" stroke-width="5"/><path d="M28 10c2 34-6 56-28 66M172 10c-2 34 6 56 28 66" fill="none" stroke="#000" stroke-width="5"/></svg>';
+  /* ---- elenco: anel 3D de cards ---- */
+  var EL = D.elenco || [], SCHEMES = ['c-k', 'c-o', 'c-p'];
+  var COURT = '<svg class="pc-court" viewBox="0 0 500 470" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="170" y="1" width="160" height="190"/><circle cx="250" cy="191" r="60"/><path d="M30 1v140a237.5 237.5 0 0 0 440 0V1"/><circle cx="250" cy="52" r="9"/></svg>';
+  function cardInner(a){
+    return '<span class="pc-top"><span>BF FFLCH</span><span>' + esc(a.posicao) + '</span></span>' + COURT +
+      '<span class="pc-num" aria-hidden="true">' + esc(a.numero) + '</span>' +
+      (a.foto ? '<img class="pc-photo" src="' + esc(a.foto) + '" alt="" loading="lazy" decoding="async">' : '') +
+      '<span class="pc-foot"><span class="pc-name">' + esc(a.nome) + '</span><span class="pc-meta"><span>' + esc(a.curso) + '</span><span>#' + esc(a.numero) + '</span></span></span>';
   }
-  // cabide: gancho na corda e a barra que fica escondida dentro da camisa
-  var hanger = '<svg class="hanger" viewBox="0 0 200 70" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
-    '<path d="M100 32V24c10-2 12-10 8-16-4-6-14-6-17 1" stroke="#C9C4C6" stroke-width="5"/>' +
-    '<path d="M100 32 36 62h128z" stroke="#8B8487" stroke-width="7"/></svg>';
-  document.getElementById('jerseys').innerHTML = D.elenco.map(function(a){
-    return '<li class="peg"><span class="swing">' + hanger +
-      '<button class="jersey" type="button" aria-pressed="false" aria-label="Camisa ' + esc(a.numero) + ', ' + esc(a.nome) + '. Mostrar detalhes">' +
-      '<span class="inner">' +
-        '<span class="face front">' + shirt('#F26B1D') + '<span class="stack"><span class="nm">' + esc(a.nome).toUpperCase() + '</span><span class="no">' + esc(a.numero) + '</span></span></span>' +
-        '<span class="face back">' + shirt('#E23FD6') + '<span class="stack"><span class="ph">Foto da atleta</span><strong>' + esc(a.nome) + '</strong><small>' + esc(a.posicao) + '<br>' + esc(a.curso) + '</small></span></span>' +
-      '</span></button></span></li>';
-  }).join('');
+  var dlg = document.getElementById('ficha');
+  function modalOpen(){ return dlg && dlg.open; }
 
-  /* ---- varal: puxar com o mouse ou o dedo, camisas balançam ---- */
   (function(){
-    var rack = document.getElementById('varal');
-    var swings = Array.prototype.slice.call(rack.querySelectorAll('.swing'));
-    var ang = swings.map(function(){ return 0; }), vel = swings.map(function(){ return 0; });
-    var last = rack.scrollLeft, running = false, moved = 0, suppress = false;
+    var stage = document.getElementById('ring-stage'), ring = document.getElementById('ring');
+    var n = EL.length, step = 360 / Math.max(n, 1);
+    if (!n) return;
+    ring.innerHTML = EL.map(function(a, i){
+      return '<div class="slot" style="--i:' + i + '"><button class="pcard ' + SCHEMES[i % 3] + '" type="button" data-i="' + i + '" aria-haspopup="dialog" ' +
+        'aria-label="' + esc(a.nome) + ', camisa ' + esc(a.numero) + '. Abrir ficha">' + cardInner(a) + '</button></div>';
+    }).join('');
+    var slots = Array.prototype.slice.call(ring.children);
+    var nowNum = document.getElementById('ring-num'), nowName = document.getElementById('ring-name');
 
-    function tick(){
-      var x = rack.scrollLeft, v = x - last; last = x;
-      var busy = Math.abs(v) > .2 || drag;
-      for (var i = 0; i < swings.length; i++){
-        // a corda anda, a camisa fica pra trás e volta como pêndulo
-        vel[i] += -ang[i]*0.045 - v*(0.09 + (i % 3)*0.02);
-        vel[i] *= 0.93;
-        ang[i] = Math.max(-16, Math.min(16, ang[i] + vel[i]));
-        if (Math.abs(ang[i]) > .04 || Math.abs(vel[i]) > .04) busy = true;
-        swings[i].style.transform = 'rotate(' + ang[i].toFixed(2) + 'deg)';
-      }
-      if (busy) requestAnimationFrame(tick); else running = false;
+    var angle = 0, target = null, dragging = false, hover = false, focusIn = false, lastInteract = 0;
+    var AUTO = 360 / 48;   // graus por segundo: uma volta a cada 48 s
+    var R = 280;
+    function layout(){
+      var w = slots[0].offsetWidth || 180;
+      // raio para os cards ficarem lado a lado no anel, com um respiro entre eles
+      R = n < 3 ? w : (w / 2) / Math.tan(Math.PI / n) + w * .5;
+      ring.style.setProperty('--r', R.toFixed(1) + 'px');
+      ring.style.setProperty('--step', step + 'deg');
     }
-    function wake(){ if (!reduce && !running){ running = true; last = rack.scrollLeft; requestAnimationFrame(tick); } }
-    rack.addEventListener('scroll', wake, {passive:true});
+    layout(); window.addEventListener('resize', layout);
 
-    // arrastar com o mouse (no celular o dedo já rola o varal sozinho)
-    var drag = false, sx = 0, ss = 0, lx = 0, lt = 0, sp = 0;
-    rack.addEventListener('pointerdown', function(e){
-      if (e.pointerType !== 'mouse' || e.button !== 0) return;
-      drag = true; moved = 0; sx = lx = e.clientX; ss = rack.scrollLeft; lt = performance.now(); sp = 0;
-      rack.classList.add('dragging'); wake();
+    function frontIndex(){ var k = Math.round(-angle / step); return ((k % n) + n) % n; }
+    var lastFront = -1;
+    function render(){
+      ring.style.transform = 'rotateX(-8deg) rotateY(' + angle.toFixed(3) + 'deg)';
+      for (var i = 0; i < n; i++){
+        var rel = (((i * step + angle) % 360) + 540) % 360 - 180;   // 0 = de frente
+        var c = Math.cos(rel * Math.PI / 180);
+        slots[i].style.setProperty('--dim', (.78 * (1 - Math.pow((c + 1) / 2, 1.4))).toFixed(3));
+      }
+      var f = frontIndex();
+      if (f !== lastFront){
+        lastFront = f;
+        slots.forEach(function(s, i){ s.classList.toggle('is-front', i === f); });
+        nowNum.textContent = pad(f + 1) + ' / ' + pad(n);
+        nowName.textContent = EL[f].nome;
+      }
+    }
+    function goTo(i){
+      var want = -i * step;
+      want += Math.round((angle - want) / 360) * 360;   // caminho mais curto
+      target = want; lastInteract = performance.now(); wake();
+    }
+    function stepBy(dir){ target = (Math.round((target !== null ? target : angle) / step) - dir) * step; lastInteract = performance.now(); wake(); }
+
+    var running = false, onScreen = true, prevT = 0;
+    function tick(t){
+      var dt = Math.min(64, t - prevT) / 1000; prevT = t;
+      if (target !== null){
+        if (reduce){ angle = target; target = null; }
+        else { var d = target - angle; angle += d * Math.min(1, dt * 7); if (Math.abs(d) < .05){ angle = target; target = null; } }
+      } else if (!dragging && !reduce && !hover && !focusIn && !modalOpen() && t - lastInteract > 2500){
+        angle -= AUTO * dt;
+      }
+      render();
+      if (onScreen && !document.hidden) requestAnimationFrame(tick); else running = false;
+    }
+    function wake(){ if (!running){ running = true; prevT = performance.now(); requestAnimationFrame(tick); } }
+    if ('IntersectionObserver' in window){
+      new IntersectionObserver(function(en){ onScreen = en[0].isIntersecting; if (onScreen) wake(); }).observe(stage);
+    }
+    document.addEventListener('visibilitychange', function(){ if (!document.hidden) wake(); });
+    render(); wake();
+
+    // arrastar para girar (mouse e dedo)
+    var sx = 0, sa = 0, lx = 0, lt = 0, v = 0, moved = 0, pid = null, suppress = false;
+    stage.addEventListener('pointerdown', function(e){
+      if (e.button !== 0) return;
+      dragging = true; pid = e.pointerId; sx = lx = e.clientX; sa = angle; lt = performance.now(); v = 0; moved = 0; target = null; wake();
     });
     window.addEventListener('pointermove', function(e){
-      if (!drag) return;
-      var now = performance.now();
-      sp = (e.clientX - lx)/Math.max(1, now - lt); lx = e.clientX; lt = now;
+      if (!dragging || e.pointerId !== pid) return;
+      var k = 180 / (Math.PI * R) * 1.15, now = performance.now();
       moved = Math.max(moved, Math.abs(e.clientX - sx));
-      rack.scrollLeft = ss - (e.clientX - sx);
+      if (moved > 6) stage.classList.add('dragging');
+      angle = sa + (e.clientX - sx) * k;
+      v = (e.clientX - lx) * k / Math.max(.001, (now - lt) / 1000); lx = e.clientX; lt = now;
     });
-    window.addEventListener('pointerup', function(){
-      if (!drag) return;
-      drag = false; suppress = moved > 6;
-      // embalo: o varal continua correndo e freia sozinho
-      var v = -sp*16;
-      (function glide(){
-        if (reduce || Math.abs(v) < .4){ rack.classList.remove('dragging'); return; }
-        rack.scrollLeft += v; v *= .94; requestAnimationFrame(glide);
-      })();
-    });
-    // arrastou? então não vira a camisa
-    rack.addEventListener('click', function(e){ if (suppress){ e.preventDefault(); e.stopPropagation(); suppress = false; } }, true);
-
-    function step(dir){ var w = swings[0] ? swings[0].parentNode.offsetWidth : 200; rack.scrollBy({left: dir*w*2, behavior: reduce ? 'auto' : 'smooth'}); }
-    document.getElementById('varal-prev').addEventListener('click', function(){ step(-1); });
-    document.getElementById('varal-next').addEventListener('click', function(){ step(1); });
-    rack.addEventListener('keydown', function(e){
-      if (e.key === 'ArrowRight'){ e.preventDefault(); step(1); }
-      if (e.key === 'ArrowLeft'){ e.preventDefault(); step(-1); }
-    });
-
-    // quando o varal aparece na tela, um ventinho balança as camisas
-    if (!reduce && 'IntersectionObserver' in window){
-      var io = new IntersectionObserver(function(en){
-        if (!en[0].isIntersecting) return;
-        io.disconnect();
-        swings.forEach(function(_, i){ vel[i] = 2.2 + (i % 3)*.6; });
-        wake();
-      }, {threshold:.4});
-      io.observe(rack);
+    function release(e){
+      if (!dragging || (e.pointerId !== undefined && e.pointerId !== pid)) return;
+      dragging = false; stage.classList.remove('dragging'); suppress = moved > 6; lastInteract = performance.now();
+      // embalo: projeta onde o anel pararia e encaixa no card mais próximo
+      var end = angle + (reduce ? 0 : Math.max(-500, Math.min(500, v)) * .35);
+      target = Math.round(end / step) * step; wake();
     }
+    window.addEventListener('pointerup', release);
+    window.addEventListener('pointercancel', release);
+    stage.addEventListener('click', function(e){ if (suppress){ e.preventDefault(); e.stopPropagation(); suppress = false; } }, true);
+
+    stage.addEventListener('mouseenter', function(){ hover = true; });
+    stage.addEventListener('mouseleave', function(){ hover = false; lastInteract = performance.now(); wake(); });
+    stage.addEventListener('focusin', function(e){ focusIn = true; var b = e.target.closest('.pcard'); if (b) goTo(+b.getAttribute('data-i')); });
+    stage.addEventListener('focusout', function(){ focusIn = false; lastInteract = performance.now(); wake(); });
+    stage.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowRight'){ e.preventDefault(); stepBy(1); }
+      if (e.key === 'ArrowLeft'){ e.preventDefault(); stepBy(-1); }
+    });
+    document.getElementById('ring-prev').addEventListener('click', function(){ stepBy(-1); });
+    document.getElementById('ring-next').addEventListener('click', function(){ stepBy(1); });
+    ring.addEventListener('click', function(e){
+      var b = e.target.closest('.pcard'); if (!b) return;
+      var i = +b.getAttribute('data-i');
+      goTo(i); openFicha(i, b);
+    });
   })();
 
-  Array.prototype.forEach.call(document.querySelectorAll('.jersey'), function(b){
-    b.addEventListener('click', function(){ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); });
+  /* ---- ficha da atleta ---- */
+  var cur = 0, opener = null;
+  var LABEL = { posicao: 'Posição', curso: 'Curso', numero: 'Número' };
+  function fillFicha(i){
+    cur = (i + EL.length) % EL.length;
+    var a = EL[cur];
+    document.getElementById('ficha-art').innerHTML = '<div class="pcard ' + SCHEMES[cur % 3] + '">' + cardInner(a) + '</div>';
+    document.getElementById('ficha-num').textContent = '#' + a.numero;
+    document.getElementById('ficha-nome').textContent = a.nome;
+    var rows = '';
+    Object.keys(a).forEach(function(k){
+      if (k === 'nome' || k === 'foto' || a[k] === '' || a[k] == null) return;
+      rows += '<div><dt>' + esc(LABEL[k] || (k.charAt(0).toUpperCase() + k.slice(1))) + '</dt><dd>' + esc(a[k]) + '</dd></div>';
+    });
+    document.getElementById('ficha-dl').innerHTML = rows;
+    document.getElementById('ficha-count').textContent = pad(cur + 1) + ' / ' + pad(EL.length);
+  }
+  function openFicha(i, from){
+    opener = from; fillFicha(i);
+    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+    document.documentElement.style.overflow = 'hidden'; document.body.classList.add('modal-on');
+    document.getElementById('ficha-close').focus();
+  }
+  function closeFicha(){
+    if (!dlg.open) return;
+    function done(){
+      dlg.classList.remove('closing'); if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
+      document.documentElement.style.overflow = ''; document.body.classList.remove('modal-on');
+      if (opener) opener.focus({preventScroll:true});
+    }
+    if (reduce) return done();
+    dlg.classList.add('closing'); setTimeout(done, 240);
+  }
+  document.getElementById('ficha-close').addEventListener('click', closeFicha);
+  document.getElementById('ficha-prev').addEventListener('click', function(){ fillFicha(cur - 1); });
+  document.getElementById('ficha-next').addEventListener('click', function(){ fillFicha(cur + 1); });
+  dlg.addEventListener('cancel', function(e){ e.preventDefault(); closeFicha(); });
+  dlg.addEventListener('click', function(e){ if (e.target === dlg) closeFicha(); });
+  dlg.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') fillFicha(cur + 1);
+    if (e.key === 'ArrowLeft') fillFicha(cur - 1);
   });
 
   var wd = new Date().getDay(), hojeTreino = null;
