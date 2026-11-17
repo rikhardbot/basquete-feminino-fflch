@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="robots" content="noindex">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Componente: cards do elenco | BF FFLCH</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wdth,wght@100,400..800&family=Big+Shoulders+Display:wght@700;800;900&family=Graduate&display=swap">
+<style>
+/* Componente guardado da versão 2: carrossel de cards do elenco + ficha da atleta.
+   Para levar a outra página: copie este CSS, a <section id="elenco">, o <dialog id="ficha">
+   e o script abaixo. Os dados ficam em ELENCO. */
+:root{
+  --black:#000;
+  --ink:#0C0B0B;
+  --coal:#151314;
+  --orange:#F26B1D;
+  --orange-ink:#A9440A;     /* laranja para texto sobre papel (contraste 4.9:1) */
+  --magenta:#E23FD6;
+  --paper:#EFEAE2;
+  --paper-2:#E3DCD1;
+  --white:#fff;
+  --grey:#ABA4A6;           /* texto secundário sobre preto */
+  --grey-ink:#4E4749;       /* texto secundário sobre papel */
+  --rule:rgba(255,255,255,.16);
+  --rule-ink:rgba(0,0,0,.22);
+  --head:"Big Shoulders Display","Archivo Narrow","Arial Narrow",Impact,sans-serif;
+  --body:"Archivo",system-ui,sans-serif;
+  --num:"Graduate",Georgia,serif;
+  --ease:cubic-bezier(.2,.8,.2,1);
+  --gut:clamp(18px,4vw,48px);
+  --max:1360px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%;scroll-padding-top:72px}
+html,body{overflow-x:clip}
+body{margin:0;background:var(--black);color:var(--white);font:400 17px/1.6 var(--body);-webkit-font-smoothing:antialiased;overflow-x:hidden}
+body.intro-on{overflow:hidden}
+/* grão de papel bem discreto por cima de tudo */
+body::after{content:"";position:fixed;inset:0;z-index:95;pointer-events:none;opacity:.06;
+  background:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3CfeColorMatrix values='0 0 0 0 1 0 0 0 0 1 0 0 0 0 1 0 0 0 .9 0'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E")}
+img,svg{display:block}
+a{color:inherit}
+:focus-visible{outline:3px solid var(--magenta);outline-offset:3px}
+.skip-link{position:absolute;left:12px;top:-60px;z-index:200;background:var(--white);color:#000;padding:10px 16px;font-weight:700;text-decoration:none}
+.skip-link:focus{top:12px}
+.sr{position:absolute;left:0;top:0;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.wrap{max-width:var(--max);margin:0 auto;padding:0 var(--gut)}
+h1,h2,h3,p,dl,dd,ol,ul{margin:0}
+ol,ul{padding:0;list-style:none}
+
+/* ---------- tipografia ---------- */
+.display{font-family:var(--head);font-weight:900;text-transform:uppercase;line-height:.86;letter-spacing:.002em}
+.eyebrow{display:flex;align-items:center;gap:12px;font:600 12px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--grey)}
+.eyebrow .idx{font:400 13px/1 var(--num);letter-spacing:0;color:var(--orange)}
+.on-paper .eyebrow{color:var(--grey-ink)}
+.on-paper .eyebrow .idx{color:var(--orange-ink)}
+
+.section{position:relative;padding:clamp(80px,10vw,140px) 0}
+.shead{display:grid;grid-template-columns:minmax(0,7fr) minmax(0,5fr);gap:20px clamp(24px,5vw,80px);align-items:end;margin-bottom:clamp(40px,5vw,72px)}
+.shead .eyebrow{grid-column:1/-1;padding-bottom:18px;border-bottom:1px solid var(--rule)}
+.shead h2{font-size:clamp(54px,8.4vw,128px)}
+.shead .lead{color:var(--grey);max-width:46ch}
+[data-reveal]{opacity:1}
+/* ---------- elenco: carrossel de cards ---------- */
+.elenco{overflow:hidden}
+.elenco .shead{grid-template-columns:minmax(0,7fr) minmax(0,5fr)}
+.rail-ctrl{display:flex;align-items:center;justify-content:space-between;gap:20px;margin-top:28px}
+.rail-ctrl .arrows{display:flex;gap:8px}
+.rail-ctrl button{width:54px;height:54px;display:grid;place-items:center;border:1px solid var(--rule);background:none;color:#fff;cursor:pointer;transition:background-color .25s,color .25s,border-color .25s,opacity .25s}
+.rail-ctrl button:hover:not(:disabled){background:#fff;color:#000;border-color:#fff}
+.rail-ctrl button:disabled{opacity:.3;cursor:default}
+.rail-ctrl button svg{width:20px;height:20px}
+.rail-meter{flex:1;display:flex;align-items:center;gap:16px;max-width:520px}
+.rail-meter .count{font:400 15px/1 var(--num);white-space:nowrap}
+.rail-meter .count span{color:var(--grey)}
+.rail-meter .bar-track{flex:1;height:2px;background:var(--rule);position:relative;overflow:hidden}
+.rail-meter .bar-fill{position:absolute;inset:0;background:var(--orange);transform-origin:left;transform:scaleX(0)}
+.rail-hint{display:flex;align-items:center;gap:10px;font:600 11px/1 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--grey);transition:opacity .5s}
+.rail-hint svg{width:30px;height:12px;animation:nudge 1.8s var(--ease) infinite}
+@keyframes nudge{50%{transform:translateX(8px)}}
+.rail-hint.off{opacity:0}
+
+.rail{overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;scrollbar-width:none;overscroll-behavior-x:contain;cursor:grab;
+  padding-inline:max(var(--gut),calc((100vw - var(--max))/2 + var(--gut)));scroll-padding-inline:max(var(--gut),calc((100vw - var(--max))/2 + var(--gut)))}
+.rail::-webkit-scrollbar{display:none}
+.rail.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
+.rail ul{display:flex;gap:clamp(12px,1.4vw,20px);width:max-content;padding:8px 0 24px}
+.rail li{flex:none;width:clamp(260px,23vw,330px);scroll-snap-align:start}
+.rail li:last-child{margin-right:max(var(--gut),calc((100vw - var(--max))/2 + var(--gut)))}
+
+.card{--bg:var(--coal);--fg:var(--white);--num-c:var(--orange);--sub:var(--grey);--line:var(--rule);
+  position:relative;display:block;width:100%;aspect-ratio:3/4.25;padding:0;border:0;cursor:pointer;text-align:left;color:var(--fg);background:var(--bg);overflow:hidden;
+  clip-path:polygon(0 0,calc(100% - 26px) 0,100% 26px,100% 100%,0 100%);
+  font:inherit;-webkit-tap-highlight-color:transparent;
+  opacity:0;transform:translateY(40px);transition:opacity .7s var(--ease),transform .7s var(--ease)}
+.rail.in .card{opacity:1;transform:none}
+.rail.in li:nth-child(2) .card{transition-delay:.06s}.rail.in li:nth-child(3) .card{transition-delay:.12s}
+.rail.in li:nth-child(4) .card{transition-delay:.18s}.rail.in li:nth-child(5) .card{transition-delay:.24s}
+.card.c-o{--bg:var(--orange);--fg:#000;--num-c:#000;--sub:rgba(0,0,0,.72);--line:rgba(0,0,0,.28)}
+.card.c-p{--bg:var(--paper);--fg:#000;--num-c:var(--orange-ink);--sub:var(--grey-ink);--line:var(--rule-ink)}
+.card.c-k{box-shadow:inset 0 0 0 1px var(--rule)}
+/* retícula no canto, como em pôster impresso */
+.card::before{content:"";position:absolute;inset:0;background:radial-gradient(currentColor 1px,transparent 1.5px) 0 0/7px 7px;opacity:.14;
+  -webkit-mask-image:linear-gradient(200deg,#000 0,transparent 42%);mask-image:linear-gradient(200deg,#000 0,transparent 42%);pointer-events:none}
+.card-top{position:absolute;left:18px;right:34px;top:16px;display:flex;justify-content:space-between;gap:10px;font:600 10px/1.2 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--sub);z-index:3}
+.card-num{position:absolute;z-index:1;right:-.07em;top:.2em;font:400 clamp(240px,22vw,320px)/.8 var(--num);letter-spacing:-.06em;color:var(--num-c);transition:transform .6s var(--ease)}
+.card.c-k .card-num{color:transparent;-webkit-text-stroke:2px var(--orange)}
+.card-court{position:absolute;z-index:0;left:-30%;bottom:-6%;width:130%;height:auto;color:var(--line);transition:transform .8s var(--ease)}
+.card-photo{position:absolute;z-index:2;inset:12% 0 0;width:100%;height:88%;object-fit:cover;object-position:50% 20%;filter:grayscale(1) contrast(1.08);mix-blend-mode:multiply}
+.card.c-k .card-photo{mix-blend-mode:normal;filter:grayscale(1) contrast(1.1) brightness(.92)}
+.card-foot{position:absolute;z-index:3;left:0;right:0;bottom:0;padding:16px 18px 18px;border-top:1px solid var(--line);background:var(--bg)}
+.card-name{display:block;font:900 clamp(30px,2.6vw,38px)/.9 var(--head);text-transform:uppercase;letter-spacing:.005em}
+.card-meta{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:600 12px/1.25 var(--body);color:var(--sub)}
+.card-open{position:absolute;z-index:4;right:0;bottom:0;width:44px;height:44px;display:grid;place-items:center;background:var(--fg);color:var(--bg);transform:translateY(100%);transition:transform .35s var(--ease)}
+.card-open svg{width:18px;height:18px}
+.card:hover .card-num,.card:focus-visible .card-num{transform:translate(-10px,-6px)}
+.card:hover .card-court{transform:translateX(4%)}
+.card:hover .card-open,.card:focus-visible .card-open{transform:none}
+.card:focus-visible{outline:none;box-shadow:inset 0 0 0 3px var(--magenta)}
+.rail.dragging .card{pointer-events:none}
+
+/* ficha da atleta (modal) */
+.ficha{padding:0;border:0;background:transparent;color:#fff;max-width:min(1040px,calc(100vw - 32px));width:100%;max-height:calc(100dvh - 32px);overflow:visible}
+.ficha::backdrop{background:rgba(0,0,0,.82);-webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);animation:fade .3s var(--ease)}
+.ficha[open] .ficha-in{animation:pop .45s var(--ease)}
+.ficha.closing .ficha-in{animation:pop .25s var(--ease) reverse forwards}
+.ficha.closing::backdrop{animation:fade .25s var(--ease) reverse forwards}
+@keyframes fade{from{opacity:0}}
+@keyframes pop{from{opacity:0;transform:translateY(24px) scale(.98)}}
+.ficha-in{position:relative;display:grid;grid-template-columns:minmax(0,5fr) minmax(0,6fr);background:var(--ink);border:1px solid var(--rule);max-height:calc(100dvh - 32px);overflow:auto}
+.ficha-art{position:relative;min-height:440px;overflow:hidden}
+.ficha-art .card{position:absolute;inset:0;aspect-ratio:auto;height:100%;opacity:1;transform:none;clip-path:none;cursor:default}
+.ficha-art .card-num{font-size:clamp(240px,30vw,400px)}
+.ficha-art .card-foot,.ficha-art .card-open{display:none}
+.ficha-info{display:flex;flex-direction:column;padding:clamp(24px,4vw,48px)}
+.ficha-num{font:400 22px/1 var(--num);color:var(--orange);margin-top:22px}
+.ficha-info h3{font-size:clamp(48px,6vw,88px);margin-top:10px}
+.ficha-info dl{margin-top:28px;border-top:1px solid var(--rule)}
+.ficha-info dl div{display:grid;grid-template-columns:120px minmax(0,1fr);gap:16px;padding:14px 0;border-bottom:1px solid var(--rule)}
+.ficha-info dt{font:600 11px/1.6 var(--body);letter-spacing:.16em;text-transform:uppercase;color:var(--grey)}
+.ficha-info dd{font-weight:600}
+.ficha-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:32px}
+.ficha-nav button{min-height:48px;padding:0 16px;border:1px solid var(--rule);background:none;color:#fff;font:800 16px/1 var(--head);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background-color .25s,color .25s}
+.ficha-nav button:hover{background:#fff;color:#000}
+.ficha-nav span{font:400 14px/1 var(--num);color:var(--grey);white-space:nowrap}
+.ficha-nav button{white-space:nowrap}
+.ficha-close{position:absolute;top:0;right:0;z-index:5;width:52px;height:52px;display:grid;place-items:center;border:0;border-left:1px solid var(--rule);border-bottom:1px solid var(--rule);background:var(--ink);color:#fff;cursor:pointer;transition:background-color .25s,color .25s}
+.ficha-close:hover{background:var(--orange);color:#000}
+.ficha-close svg{width:20px;height:20px}
+
+@media (max-width:960px){
+  .shead,.elenco .shead,.ficha-in{grid-template-columns:minmax(0,1fr)}
+  .ficha-art{min-height:300px}
+}
+@media (max-width:760px){
+  .rail li{width:78vw}
+  .rail-hint{display:none}
+}
+@media (max-width:420px){
+  .ficha-nav{gap:8px}.ficha-nav button{flex:1;padding:0 8px}.ficha-nav span{display:none}
+  .card-num{font-size:280px}
+}
+@media (prefers-reduced-motion:reduce){
+  *,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important;transition-delay:0s!important}
+  .card{opacity:1;transform:none}
+}
+</style>
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <defs>
+    <symbol id="claw" viewBox="0 0 1140 960"><path d="M52 608 73 590 93 572 114 554 134 535 153 517 173 498 192 479 211 459 230 440 249 420 271 404 289 383 307 363 324 342 341 321 354 296 371 275 387 253 403 231 419 209 434 187 449 164 464 141 479 119 494 96 508 72 508 72 487 90 467 108 446 126 426 145 407 163 387 182 368 201 349 221 330 240 311 260 295 282 277 302 260 323 242 343 225 364 206 384 189 405 173 427 157 449 141 471 126 493 111 516 96 539 81 561 66 584 52 608Z"/><path d="M68 816 97 792 126 767 154 742 182 717 209 692 236 666 263 640 290 614 316 588 342 561 373 538 399 511 423 483 448 455 472 426 490 393 513 364 536 334 559 304 581 274 603 244 625 213 646 182 667 151 688 120 708 88 708 88 679 112 650 137 622 162 594 187 567 212 540 238 513 264 486 290 460 316 434 343 411 373 386 401 361 428 337 457 313 485 286 511 263 540 240 570 217 600 195 630 173 660 151 691 130 722 109 753 88 784 68 816Z"/><path d="M152 928 193 901 234 874 274 845 314 817 353 788 392 759 430 729 468 699 506 668 543 637 587 613 623 580 659 548 693 514 728 480 754 437 788 402 821 366 853 330 885 294 917 256 948 219 979 181 1009 143 1039 104 1068 64 1068 64 1027 91 986 118 946 147 906 175 867 204 828 233 790 263 752 293 714 324 677 355 645 392 609 424 573 457 538 491 504 525 466 555 432 590 399 626 367 662 335 698 303 736 272 773 241 811 211 849 181 888 152 928Z"/><path d="M592 808 615 793 638 778 661 763 684 747 706 732 728 715 750 699 771 682 793 665 814 648 838 635 859 617 879 599 899 580 918 561 933 537 951 518 970 498 988 478 1006 457 1024 436 1041 415 1058 394 1075 372 1092 350 1108 328 1108 328 1085 343 1062 358 1039 373 1016 389 994 404 972 421 950 437 929 454 907 471 886 488 868 508 848 526 828 544 808 563 789 582 767 599 749 618 730 638 712 658 694 679 676 700 659 721 642 742 625 764 608 786 592 808Z"/></symbol>
+    <!-- logo oficial do @bffflch, vetorizado a partir da foto de perfil -->
+    <symbol id="bf" viewBox="142 76 414 627"><path fill="#E23FD6" fill-rule="evenodd" d="M401.0 85.2 370.7 80.0 357.7 79.0 341.0 80.0 332.7 79.3 311.7 83.4 296.0 85.0 264.7 96.3 258.0 101.1 245.0 106.7 239.3 111.3 232.7 114.8 204.4 138.2 192.5 151.3 170.9 182.3 163.0 198.3 150.5 232.0 148.0 246.0 147.5 257.0 145.3 265.0 146.0 299.7 148.0 309.7 148.0 318.7 150.2 335.3 154.7 344.0 163.6 370.3 169.2 379.0 171.6 385.0 176.0 390.3 180.3 399.3 185.5 404.7 192.1 414.3 226.3 446.5 233.0 451.7 254.0 462.8 261.7 468.4 263.8 472.3 265.0 480.7 265.0 513.0 264.0 519.0 262.3 521.6 258.7 523.5 243.0 525.0 203.3 524.3 200.3 525.5 198.4 528.3 198.0 628.0 199.7 631.7 204.3 633.7 254.0 633.0 260.3 634.3 263.0 636.0 265.0 642.0 265.0 692.7 266.7 699.6 380.3 699.6 381.7 695.3 381.7 641.7 383.4 635.7 386.0 634.1 393.7 633.0 440.7 633.7 446.6 631.3 448.7 619.7 448.7 532.0 447.6 528.0 445.0 525.3 442.0 524.3 417.7 525.0 409.0 524.0 396.7 525.0 385.0 522.8 382.7 519.7 381.7 514.0 382.6 488.3 387.0 484.0 420.0 474.2 442.3 464.6 472.0 445.9 493.7 427.3 506.1 413.3 518.0 397.3 525.8 383.7 527.6 378.3 533.8 369.3 537.9 358.3 541.3 352.7 542.4 346.0 547.5 334.7 548.2 325.7 550.7 316.7 552.7 283.7 552.1 263.3 550.0 254.3 549.5 245.0 546.3 230.3 541.0 214.3 536.4 204.7 535.0 198.0 516.9 166.7 497.9 144.3 494.6 138.3 488.0 134.9 480.3 126.1 470.7 120.6 464.0 114.5 450.3 105.9 417.0 90.3 409.3 88.7ZM450.7 353.3 474.7 373.3 485.0 384.3 488.7 393.7 488.1 399.3 485.0 407.3 474.7 418.3 462.7 428.8 437.0 446.1 414.7 456.3 399.7 461.2 390.0 463.3 385.3 462.4 383.3 460.3 382.0 456.7 383.2 441.3 386.3 430.0 391.7 420.3 397.3 413.0 408.2 402.7 441.3 356.0 446.3 352.2ZM348.7 313.1 352.3 320.0 348.4 324.7 348.0 330.3 344.7 335.0 335.3 343.5 331.3 345.1 328.7 344.5 327.3 342.3 328.3 340.4 338.8 334.7 340.3 324.7 343.5 320.0 345.8 313.7ZM301.1 285.6 305.5 295.0 308.7 320.7 310.4 323.7 316.6 328.7 318.4 334.0 321.8 338.7 320.3 341.4 315.0 339.0 307.0 329.2 303.3 329.3 293.3 333.7 290.0 333.2 287.9 331.0 289.0 329.1 299.0 325.8 302.6 319.7 304.3 305.7 300.2 293.7ZM219.0 251.4 223.6 253.3 231.0 265.3 241.5 300.3 243.5 312.7 247.8 326.7 250.0 339.7 253.0 399.7 259.7 434.7 259.4 438.7 257.3 440.6 253.3 439.5 239.7 427.9 225.3 410.3 214.7 388.3 209.1 371.0 206.2 357.3 204.7 344.0 204.7 308.7 207.2 287.3 215.3 255.3ZM198.7 239.0 202.0 239.1 204.6 240.7 205.7 246.7 196.5 279.0 193.2 299.3 193.0 334.7 197.2 369.7 203.4 387.7 203.2 390.0 201.7 391.2 197.3 389.0 191.8 381.7 177.0 354.3 169.1 333.0 165.7 306.0 167.2 283.0 173.2 263.0 183.3 247.3 192.3 240.9ZM247.3 203.0 250.3 203.3 258.3 207.3 298.3 235.0 302.0 240.7 296.9 262.6 295.0 262.9 289.7 260.2 282.0 260.0 271.3 263.3 262.1 272.7 255.8 288.0 254.0 289.7 251.8 288.3 248.6 283.0 240.4 259.0 236.0 250.0 227.8 238.3 226.7 233.0 227.8 227.3 233.7 217.0 241.7 206.3ZM230.9 192.0 232.5 196.0 231.9 199.3 216.0 223.9 209.7 226.8 201.3 226.7 191.7 228.8 175.7 237.9 171.8 237.3 172.1 228.7 178.2 212.0 190.0 188.3 195.7 181.8 203.0 178.1 209.7 178.4 225.0 187.0ZM260.2 183.7 271.7 173.8 276.0 172.0 283.0 172.9 293.7 176.5 330.0 179.7 403.0 179.7 424.0 181.7 456.0 186.9 485.7 197.2 505.7 210.5 516.3 221.0 521.8 228.7 529.8 249.7 533.0 268.7 533.0 297.0 530.8 315.7 522.3 345.0 515.8 361.0 510.9 369.7 507.7 372.7 503.0 374.5 498.7 374.7 490.7 372.9 457.0 342.7 456.0 339.7 457.7 325.7 456.7 312.0 428.4 256.7 418.6 241.0 418.6 237.7 421.6 232.3 419.1 223.7 415.9 219.3 409.0 213.5 399.0 209.2 393.0 209.0 385.0 211.1 380.7 214.7 377.1 221.7 376.0 231.3 381.0 245.3 379.6 248.3 377.0 249.9 374.0 249.2 371.4 245.7 374.0 239.0 374.7 230.3 372.8 223.7 369.7 220.4 359.7 216.2 348.0 216.2 338.0 221.4 334.2 229.0 334.2 235.0 336.0 240.3 341.5 246.0 339.2 253.0 338.8 263.3 345.3 273.0 353.7 279.7 372.0 288.8 387.3 288.7 396.7 284.8 399.0 285.4 398.8 287.0 394.3 291.0 392.5 294.3 393.0 297.3 399.3 305.3 396.4 312.7 393.7 313.9 382.0 310.6 380.9 302.0 375.3 296.0 359.3 288.5 349.0 281.8 341.7 281.0 336.0 270.7 332.9 260.0 332.6 254.3 334.7 248.0 333.2 243.7 328.3 239.7 312.7 231.6 277.7 206.7 261.0 196.2 258.1 192.7 257.3 189.7ZM292.1 160.3 301.3 152.0 326.0 140.3 356.7 130.1 394.7 124.7 409.0 124.7 420.3 126.2 448.0 133.6 461.7 140.3 476.0 150.8 491.5 166.3 507.0 188.0 508.2 192.0 506.7 194.0 503.7 194.2 492.3 187.8 470.7 179.1 445.3 173.2 426.3 170.2 388.7 168.0 378.0 168.8 353.0 168.0 346.0 169.0 314.7 168.0 299.0 165.9 293.3 163.2ZM261.7 122.5 263.3 125.0 260.2 137.3 260.0 143.7 263.4 159.7 263.0 163.3 260.0 168.0 248.7 179.2 244.3 181.5 238.3 181.0 226.0 173.9 219.1 167.3 217.0 161.7 218.3 154.3 220.7 150.7 231.0 140.5 253.7 125.0 258.3 122.7ZM408.5 110.0 407.3 112.1 402.7 113.4 368.3 116.2 339.0 122.7 304.0 137.2 279.7 151.2 275.0 150.2 271.1 145.0 273.9 133.7 281.0 123.7 295.7 112.0 313.7 103.9 340.7 98.7 367.0 98.7 394.0 103.1 406.3 107.8Z"/></symbol>
+  </defs>
+</svg>
+
+<main>
+  <!-- ELENCO -->
+  <section class="section elenco" id="elenco" aria-labelledby="elenco-title">
+    <div class="wrap">
+      <div class="shead" data-reveal>
+        <p class="eyebrow"><span class="idx">02</span> Elenco</p>
+        <h2 class="display" id="elenco-title">Quem veste<br>a garra</h2>
+        <div>
+          <p class="lead">Bixetes, veteranas e pós de vários cursos da FFLCH. Arrasta para o lado e abre a ficha de cada atleta.</p>
+          <div class="rail-ctrl">
+            <div class="rail-meter"><span class="count" id="rail-count">01 <span>/ 00</span></span><span class="bar-track"><span class="bar-fill" id="rail-fill"></span></span></div>
+            <div class="arrows">
+              <button type="button" id="rail-prev" aria-label="Atletas anteriores" aria-controls="rail"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M17 10H4M9 5l-5 5 5 5"/></svg></button>
+              <button type="button" id="rail-next" aria-label="Próximas atletas" aria-controls="rail"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M3 10h13M11 5l5 5-5 5"/></svg></button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="rail" id="rail" role="region" aria-roledescription="carrossel" aria-label="Elenco: use as setas do teclado para navegar" tabindex="0">
+      <ul id="roster"></ul>
+    </div>
+    <div class="wrap"><p class="rail-hint" id="rail-hint" aria-hidden="true">Arrasta pro lado <svg viewBox="0 0 30 12" fill="none" stroke="currentColor" stroke-width="2"><path d="M0 6h27M22 1l5 5-5 5"/></svg></p></div>
+  </section>
+
+  <dialog class="ficha" id="ficha" aria-labelledby="ficha-nome">
+    <div class="ficha-in">
+      <div class="ficha-art" id="ficha-art"></div>
+      <div class="ficha-info">
+        <p class="eyebrow"><span class="idx">BF</span> Ficha da atleta</p>
+        <p class="ficha-num" id="ficha-num"></p>
+        <h3 class="display" id="ficha-nome"></h3>
+        <dl id="ficha-dl"></dl>
+        <div class="ficha-nav">
+          <button type="button" id="ficha-prev">← Anterior</button>
+          <span id="ficha-count"></span>
+          <button type="button" id="ficha-next">Próxima →</button>
+        </div>
+      </div>
+      <button class="ficha-close" type="button" id="ficha-close" aria-label="Fechar ficha"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4" aria-hidden="true"><path d="M4 4l12 12M16 4 4 16"/></svg></button>
+    </div>
+  </dialog>
+
+</main>
+
+<script>
+// Elenco: troque pelos dados reais. "foto" é opcional (caminho de uma foto real).
+var ELENCO = [
+  { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+  { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+  { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+  { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+  { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" },
+  { nome: "Nome", numero: "0", posicao: "Posição", curso: "Curso", foto: "" }
+];
+(function(){
+  var D = { elenco: ELENCO };
+  var reduce = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+  function $(id){ return document.getElementById(id); }
+  function esc(s){ return String(s == null ? '' : s).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function pad(n){ n = String(n); return n.length < 2 ? '0' + n : n; }
+  var COURT = '<svg class="card-court" viewBox="0 0 500 470" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="170" y="1" width="160" height="190"/><circle cx="250" cy="191" r="60"/><path d="M30 1v140a237.5 237.5 0 0 0 440 0V1"/><circle cx="250" cy="52" r="9"/></svg>';
+  /* ---- elenco: cards ---- */
+  var EL = D.elenco || [], SCHEMES = ['c-k', 'c-o', 'c-p'];
+  function cardInner(a){
+    return '<span class="card-top"><span>BF FFLCH</span><span>' + esc(a.posicao) + '</span></span>' +
+      COURT + '<span class="card-num" aria-hidden="true">' + esc(a.numero) + '</span>' +
+      (a.foto ? '<img class="card-photo" src="' + esc(a.foto) + '" alt="" loading="lazy" decoding="async">' : '') +
+      '<span class="card-foot"><span class="card-name">' + esc(a.nome) + '</span><span class="card-meta"><span>' + esc(a.curso) + '</span><span>#' + esc(a.numero) + '</span></span></span>';
+  }
+  $('roster').innerHTML = EL.map(function(a, i){
+    return '<li><button class="card ' + SCHEMES[i % 3] + '" type="button" data-i="' + i + '" aria-haspopup="dialog" ' +
+      'aria-label="' + esc(a.nome) + ', camisa ' + esc(a.numero) + '. Abrir ficha">' + cardInner(a) +
+      '<span class="card-open" aria-hidden="true"><svg viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M10 3v14M3 10h14"/></svg></span></button></li>';
+  }).join('');
+
+  /* ---- carrossel ---- */
+  (function(){
+    var rail = $('rail'), items = rail.querySelectorAll('li'), fill = $('rail-fill'), count = $('rail-count');
+    var prev = $('rail-prev'), next = $('rail-next'), hint = $('rail-hint');
+    var total = items.length;
+    function stepW(){ return items[0] ? items[0].getBoundingClientRect().width + parseFloat(getComputedStyle(rail.firstElementChild).columnGap || 16) : 300; }
+    function update(){
+      var max = rail.scrollWidth - rail.clientWidth, x = rail.scrollLeft;
+      var p = max > 0 ? x / max : 1;
+      fill.style.transform = 'scaleX(' + Math.max(.04, p).toFixed(3) + ')';
+      var idx = Math.min(total, Math.round(x / stepW()) + 1);
+      count.innerHTML = pad(idx) + ' <span>/ ' + pad(total) + '</span>';
+      prev.disabled = x < 4; next.disabled = x > max - 4;
+    }
+    rail.addEventListener('scroll', function(){ requestAnimationFrame(update); if (rail.scrollLeft > 30) hint.classList.add('off'); }, {passive:true});
+    window.addEventListener('resize', update);
+    function go(dir){ rail.scrollBy({left: dir * stepW() * (innerWidth < 760 ? 1 : 2), behavior: reduce ? 'auto' : 'smooth'}); }
+    prev.addEventListener('click', function(){ go(-1); });
+    next.addEventListener('click', function(){ go(1); });
+    rail.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowRight'){ e.preventDefault(); go(1); }
+      if (e.key === 'ArrowLeft'){ e.preventDefault(); go(-1); }
+    });
+
+    // arrastar com o mouse (no toque o navegador já rola sozinho)
+    var drag = false, sx = 0, ss = 0, lx = 0, lt = 0, sp = 0, moved = 0, suppress = false;
+    rail.addEventListener('pointerdown', function(e){
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      drag = true; moved = 0; sx = lx = e.clientX; ss = rail.scrollLeft; lt = performance.now(); sp = 0;
+    });
+    window.addEventListener('pointermove', function(e){
+      if (!drag) return;
+      var now = performance.now();
+      sp = (e.clientX - lx) / Math.max(1, now - lt); lx = e.clientX; lt = now;
+      moved = Math.max(moved, Math.abs(e.clientX - sx));
+      if (moved > 4) rail.classList.add('dragging');
+      rail.scrollLeft = ss - (e.clientX - sx);
+    });
+    window.addEventListener('pointerup', function(){
+      if (!drag) return;
+      drag = false; suppress = moved > 6;
+      var v = -sp * 16;
+      (function glide(){
+        if (reduce || Math.abs(v) < .5){ rail.classList.remove('dragging'); return; }
+        rail.scrollLeft += v; v *= .93; requestAnimationFrame(glide);
+      })();
+    });
+    rail.addEventListener('click', function(e){ if (suppress){ e.preventDefault(); e.stopPropagation(); suppress = false; } }, true);
+
+    // entrada dos cards
+    if ('IntersectionObserver' in window && !reduce){
+      var io = new IntersectionObserver(function(en){ if (en[0].isIntersecting){ rail.classList.add('in'); io.disconnect(); } }, {threshold:.2});
+      io.observe(rail);
+    } else rail.classList.add('in');
+    update();
+  })();
+
+  /* ---- ficha da atleta (modal) ---- */
+  (function(){
+    var dlg = $('ficha'), cur = 0, opener = null;
+    var LABEL = { posicao: 'Posição', curso: 'Curso', numero: 'Número' };
+    function fill(i){
+      cur = (i + EL.length) % EL.length;
+      var a = EL[cur];
+      $('ficha-art').innerHTML = '<div class="card ' + SCHEMES[cur % 3] + '">' + cardInner(a) + '</div>';
+      $('ficha-num').textContent = '#' + a.numero;
+      $('ficha-nome').textContent = a.nome;
+      var rows = '';
+      Object.keys(a).forEach(function(k){
+        if (k === 'nome' || k === 'foto' || a[k] === '' || a[k] == null) return;
+        var lbl = LABEL[k] || (k.charAt(0).toUpperCase() + k.slice(1));
+        rows += '<div><dt>' + esc(lbl) + '</dt><dd>' + esc(a[k]) + '</dd></div>';
+      });
+      $('ficha-dl').innerHTML = rows;
+      $('ficha-count').textContent = pad(cur + 1) + ' / ' + pad(EL.length);
+    }
+    function open(i, from){
+      opener = from; fill(i);
+      if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
+      document.documentElement.style.overflow = 'hidden'; document.body.classList.add('modal-on');
+      $('ficha-close').focus();
+    }
+    function close(){
+      if (!dlg.open) return;
+      function done(){ dlg.classList.remove('closing'); dlg.close ? dlg.close() : dlg.removeAttribute('open');
+        document.documentElement.style.overflow = ''; document.body.classList.remove('modal-on');
+        if (opener) opener.focus(); }
+      if (reduce) return done();
+      dlg.classList.add('closing'); setTimeout(done, 240);
+    }
+    $('roster').addEventListener('click', function(e){
+      var b = e.target.closest('.card'); if (b) open(+b.getAttribute('data-i'), b);
+    });
+    $('ficha-close').addEventListener('click', close);
+    $('ficha-prev').addEventListener('click', function(){ fill(cur - 1); });
+    $('ficha-next').addEventListener('click', function(){ fill(cur + 1); });
+    dlg.addEventListener('cancel', function(e){ e.preventDefault(); close(); });
+    dlg.addEventListener('click', function(e){ if (e.target === dlg) close(); });
+    dlg.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowRight') fill(cur + 1);
+      if (e.key === 'ArrowLeft') fill(cur - 1);
+    });
+  })();
+
+})();
+</script>
+</body>
+</html>
