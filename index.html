@@ -170,8 +170,8 @@ h1,h2,h3,p{margin:0}
 .ring-stage:focus-visible{box-shadow:inset 0 0 0 3px var(--magenta)}
 .ring-stage.dragging{cursor:grabbing}
 .ring-stage.dragging .pcard{pointer-events:none}
-.ring{position:absolute;z-index:1;left:50%;top:41%;width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2);transform-style:preserve-3d;transform:rotateX(-8deg)}
-.ring .slot{position:absolute;inset:0;transform-style:preserve-3d;--dim:0;transform:rotateY(calc(var(--i) * var(--step, 45deg))) translateZ(var(--r, 280px))}
+.ring{position:absolute;z-index:1;left:50%;top:41%;width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2);transform-style:preserve-3d;transform:rotateX(-11deg);will-change:transform}
+.ring .slot{position:absolute;inset:0;transform-style:preserve-3d;transform:rotateY(calc(var(--i) * var(--step, 45deg))) translateZ(var(--r, 280px))}
 /* chão: círculo central da quadra visto em perspectiva */
 .ring-floor{position:absolute;z-index:0;left:50%;bottom:-2%;width:min(118vw,calc(var(--w) * 8));aspect-ratio:4.6/1;transform:translateX(-50%);border-radius:50%;border:2px solid rgba(255,255,255,.12);
   background:radial-gradient(closest-side,rgba(242,107,29,.22),transparent 70%);pointer-events:none}
@@ -191,7 +191,7 @@ h1,h2,h3,p{margin:0}
   clip-path:polygon(0 0,calc(100% - 13%) 0,100% 9%,100% 100%,0 100%);-webkit-tap-highlight-color:transparent;transition:filter .3s;
   backface-visibility:hidden;-webkit-backface-visibility:hidden}
 /* cards de lado ficam mais escuros, como se saíssem da luz */
-.slot .pcard::after{content:"";position:absolute;inset:0;z-index:5;background:#000;opacity:var(--dim);pointer-events:none}
+.pc-shade{position:absolute;inset:0;z-index:5;background:#000;opacity:0;pointer-events:none;will-change:opacity}
 .pcard.c-o{--bg:var(--orange);--fg:#000;--num-c:#000;--sub:rgba(0,0,0,.72);--line:rgba(0,0,0,.28)}
 .pcard.c-p{--bg:var(--paper);--fg:#000;--num-c:var(--orange-ink);--sub:#4E4749;--line:rgba(0,0,0,.2)}
 .pcard.c-k{box-shadow:inset 0 0 0 1px rgba(255,255,255,.18)}
@@ -400,9 +400,6 @@ footer a:hover{color:#fff}
 .ready .rv-hero{opacity:1;translate:0 0}
 .mark-wrap.rv-hero{opacity:1;translate:0 0;clip-path:inset(100% 0 -60% 0);transition:clip-path 1.2s var(--m-ease)}
 .ready .mark-wrap.rv-hero{clip-path:inset(-60% -10% -60% -10%)}
-/* parallax (o JS escreve as variáveis) */
-.mark-wrap{transform:translateY(var(--py,0px))}
-.ballbox{translate:0 var(--pb,0px)}
 </style>
 </head>
 <body class="intro-on">
@@ -796,171 +793,209 @@ var DADOS = {
     return '<tr><td>' + esc(r.data) + '</td><td>' + esc(r.adversario) + '</td><td>' + esc(r.campeonato) + '</td><td class="score">' + pad(r.nosso) + ' – ' + pad(r.deles) + '</td><td>' + tag + '</td></tr>';
   }).join('');
 
-  /* ---- elenco: anel 3D de cards ---- */
-  var EL = D.elenco || [], SCHEMES = ['c-k', 'c-o', 'c-p'];
-  var COURT = '<svg class="pc-court" viewBox="0 0 500 470" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="170" y="1" width="160" height="190"/><circle cx="250" cy="191" r="60"/><path d="M30 1v140a237.5 237.5 0 0 0 440 0V1"/><circle cx="250" cy="52" r="9"/></svg>';
-  function cardInner(a){
-    return '<span class="pc-top"><span>BF FFLCH</span><span>' + esc(a.posicao) + '</span></span>' + COURT +
-      '<span class="pc-num" aria-hidden="true">' + esc(a.numero) + '</span>' +
-      (a.foto ? '<img class="pc-photo" src="' + esc(a.foto) + '" alt="" loading="lazy" decoding="async">' : '') +
-      '<span class="pc-foot"><span class="pc-name">' + esc(a.nome) + '</span><span class="pc-meta"><span>' + esc(a.curso) + '</span><span>#' + esc(a.numero) + '</span></span></span>';
+  /* ---- elenco: anel 3D ---- */
+  var roster = D.elenco || [];
+  var SCHEMES = ['c-k', 'c-o', 'c-p'];
+  var COURT_SVG = '<svg class="pc-court" viewBox="0 0 500 470" fill="none" stroke="currentColor" stroke-width="3" aria-hidden="true"><rect x="170" y="1" width="160" height="190"/><circle cx="250" cy="191" r="60"/><path d="M30 1v140a237.5 237.5 0 0 0 440 0V1"/><circle cx="250" cy="52" r="9"/></svg>';
+  var fichaDialog = document.getElementById('ficha');
+
+  function playerCard(player){
+    return '<span class="pc-top"><span>BF FFLCH</span><span>' + esc(player.posicao) + '</span></span>' + COURT_SVG +
+      '<span class="pc-num" aria-hidden="true">' + esc(player.numero) + '</span>' +
+      (player.foto ? '<img class="pc-photo" src="' + esc(player.foto) + '" alt="" loading="lazy" decoding="async">' : '') +
+      '<span class="pc-foot"><span class="pc-name">' + esc(player.nome) + '</span><span class="pc-meta"><span>' + esc(player.curso) + '</span><span>#' + esc(player.numero) + '</span></span></span>';
   }
-  var dlg = document.getElementById('ficha');
-  function modalOpen(){ return dlg && dlg.open; }
 
   (function(){
+    var count = roster.length;
+    if (!count) return;
     var stage = document.getElementById('ring-stage'), ring = document.getElementById('ring');
-    var n = EL.length, step = 360 / Math.max(n, 1);
-    if (!n) return;
-    ring.innerHTML = EL.map(function(a, i){
+    var frontNumber = document.getElementById('ring-num'), frontName = document.getElementById('ring-name');
+    var STEP = 360 / count, AUTO_SPEED = 360 / 48, RAD = Math.PI / 180;
+
+    ring.innerHTML = roster.map(function(player, i){
       return '<div class="slot" style="--i:' + i + '"><button class="pcard ' + SCHEMES[i % 3] + '" type="button" data-i="' + i + '" aria-haspopup="dialog" ' +
-        'aria-label="' + esc(a.nome) + ', camisa ' + esc(a.numero) + '. Abrir ficha">' + cardInner(a) + '</button></div>';
+        'aria-label="' + esc(player.nome) + ', camisa ' + esc(player.numero) + '. Abrir ficha">' + playerCard(player) +
+        '<span class="pc-shade" aria-hidden="true"></span></button></div>';
     }).join('');
     var slots = Array.prototype.slice.call(ring.children);
-    var nowNum = document.getElementById('ring-num'), nowName = document.getElementById('ring-name');
+    var shades = slots.map(function(slot){ return slot.querySelector('.pc-shade'); });
+    var shadeLevels = [];
 
-    var angle = 0, target = null, dragging = false, hover = false, focusIn = false, lastInteract = 0;
-    var AUTO = 360 / 48;   // graus por segundo: uma volta a cada 48 s
-    var R = 280;
+    var angle = 0, target = null, radius = 0, frontIndex = -1;
+    var dragging = false, hovering = false, focused = false, lastInteraction = 0;
+
     function layout(){
-      var w = slots[0].offsetWidth || 180;
-      // raio para os cards ficarem lado a lado no anel, com um respiro entre eles
-      R = n < 3 ? w : (w / 2) / Math.tan(Math.PI / n) + w * .5;
-      ring.style.setProperty('--r', R.toFixed(1) + 'px');
-      ring.style.setProperty('--step', step + 'deg');
+      var width = slots[0].offsetWidth;
+      radius = count < 3 ? width : width / 2 / Math.tan(Math.PI / count) + width / 2;
+      ring.style.setProperty('--r', radius + 'px');
+      ring.style.setProperty('--step', STEP + 'deg');
     }
-    layout(); window.addEventListener('resize', layout);
 
-    function frontIndex(){ var k = Math.round(-angle / step); return ((k % n) + n) % n; }
-    var lastFront = -1;
+    // Só transform e opacity mudam por quadro: a placa de vídeo resolve sem recalcular estilo dos cards.
     function render(){
-      ring.style.transform = 'rotateX(-11deg) rotateY(' + angle.toFixed(3) + 'deg)';
-      for (var i = 0; i < n; i++){
-        var rel = (((i * step + angle) % 360) + 540) % 360 - 180;   // 0 = de frente
-        var c = Math.cos(rel * Math.PI / 180);
-        slots[i].style.setProperty('--dim', (.78 * (1 - Math.pow((c + 1) / 2, 1.4))).toFixed(3));
+      ring.style.transform = 'rotateX(-11deg) rotateY(' + angle.toFixed(2) + 'deg)';
+      for (var i = 0; i < count; i++){
+        var facing = (Math.cos((i * STEP + angle) * RAD) + 1) / 2;
+        var level = Math.round(78 * (1 - Math.pow(facing, 1.4))) / 100;
+        if (level !== shadeLevels[i]){ shadeLevels[i] = level; shades[i].style.opacity = level; }
       }
-      var f = frontIndex();
-      if (f !== lastFront){
-        lastFront = f;
-        slots.forEach(function(s, i){ s.classList.toggle('is-front', i === f); });
-        nowNum.textContent = pad(f + 1) + ' / ' + pad(n);
-        nowName.textContent = EL[f].nome;
-      }
+      var front = ((Math.round(-angle / STEP) % count) + count) % count;
+      if (front === frontIndex) return;
+      if (frontIndex >= 0) slots[frontIndex].classList.remove('is-front');
+      slots[front].classList.add('is-front');
+      frontIndex = front;
+      frontNumber.textContent = pad(front + 1) + ' / ' + pad(count);
+      frontName.textContent = roster[front].nome;
     }
-    function goTo(i){
-      var want = -i * step;
-      want += Math.round((angle - want) / 360) * 360;   // caminho mais curto
-      target = want; lastInteract = performance.now(); wake();
-    }
-    function stepBy(dir){ target = (Math.round((target !== null ? target : angle) / step) - dir) * step; lastInteract = performance.now(); wake(); }
 
-    var running = false, onScreen = true, prevT = 0, lastSY = scrollY;
-    function tick(t){
-      var dt = Math.min(64, t - prevT) / 1000; prevT = t;
-      // rolar a página empurra os cards pelo anel
-      var sdy = scrollY - lastSY; lastSY = scrollY;
-      if (!reduce && !dragging && target === null && Math.abs(sdy) < 400) angle -= sdy * .22;
+    function touch(){ lastInteraction = performance.now(); wake(); }
+    function goTo(index){
+      var desired = -index * STEP;
+      target = desired + Math.round((angle - desired) / 360) * 360;
+      touch();
+    }
+    function stepBy(direction){
+      target = (Math.round((target === null ? angle : target) / STEP) - direction) * STEP;
+      touch();
+    }
+
+    var running = false, visible = true, lastTime = 0, lastScrollY = 0;
+    function tick(now){
+      var dt = Math.min(64, now - lastTime) / 1000, scrolled = scrollY - lastScrollY;
+      lastTime = now; lastScrollY = scrollY;
       if (target !== null){
-        if (reduce){ angle = target; target = null; }
-        else { var d = target - angle; angle += d * Math.min(1, dt * 7); if (Math.abs(d) < .05){ angle = target; target = null; } }
-      } else if (!dragging && !reduce && !hover && !focusIn && !modalOpen() && t - lastInteract > 2500){
-        angle -= AUTO * dt;
+        var gap = target - angle;
+        if (reduce || Math.abs(gap) < .05){ angle = target; target = null; }
+        else angle += gap * Math.min(1, dt * 7);
+      } else if (!reduce && !dragging){
+        if (Math.abs(scrolled) < 400) angle -= scrolled * .22;
+        if (!hovering && !focused && !fichaDialog.open && now - lastInteraction > 2500) angle -= AUTO_SPEED * dt;
       }
       render();
-      if (onScreen && !document.hidden) requestAnimationFrame(tick); else running = false;
+      running = visible && !document.hidden && (!reduce || dragging || target !== null);
+      if (running) requestAnimationFrame(tick);
     }
-    function wake(){ if (!running){ running = true; prevT = performance.now(); requestAnimationFrame(tick); } }
-    if ('IntersectionObserver' in window){
-      new IntersectionObserver(function(en){ onScreen = en[0].isIntersecting; if (onScreen) wake(); }).observe(stage);
+    function wake(){
+      if (running || !visible) return;
+      running = true; lastTime = performance.now(); lastScrollY = scrollY;
+      requestAnimationFrame(tick);
     }
-    document.addEventListener('visibilitychange', function(){ if (!document.hidden) wake(); });
-    addEventListener('scroll', function(){ if (onScreen) wake(); }, {passive:true});
-    render(); wake();
 
-    // arrastar para girar (mouse e dedo)
-    var sx = 0, sa = 0, lx = 0, lt = 0, v = 0, moved = 0, pid = null, suppress = false;
+    layout(); render();
+    addEventListener('resize', layout);
+    if ('IntersectionObserver' in window){
+      new IntersectionObserver(function(entries){ visible = entries[0].isIntersecting; wake(); }).observe(stage);
+    }
+    document.addEventListener('visibilitychange', wake);
+    wake();
+
+    var pointerId = null, startX = 0, startAngle = 0, lastX = 0, lastMoveTime = 0, velocity = 0, travel = 0, suppressClick = false;
     stage.addEventListener('pointerdown', function(e){
       if (e.button !== 0) return;
-      dragging = true; pid = e.pointerId; sx = lx = e.clientX; sa = angle; lt = performance.now(); v = 0; moved = 0; target = null; wake();
+      dragging = true; pointerId = e.pointerId; target = null;
+      startX = lastX = e.clientX; startAngle = angle; lastMoveTime = performance.now();
+      velocity = travel = 0;
+      wake();
     });
-    window.addEventListener('pointermove', function(e){
-      if (!dragging || e.pointerId !== pid) return;
-      var k = 180 / (Math.PI * R) * 1.15, now = performance.now();
-      moved = Math.max(moved, Math.abs(e.clientX - sx));
-      if (moved > 6) stage.classList.add('dragging');
-      angle = sa + (e.clientX - sx) * k;
-      v = (e.clientX - lx) * k / Math.max(.001, (now - lt) / 1000); lx = e.clientX; lt = now;
+    addEventListener('pointermove', function(e){
+      if (!dragging || e.pointerId !== pointerId) return;
+      var degreesPerPixel = 180 / (Math.PI * radius) * 1.15, now = performance.now();
+      travel = Math.max(travel, Math.abs(e.clientX - startX));
+      if (travel > 6) stage.classList.add('dragging');
+      angle = startAngle + (e.clientX - startX) * degreesPerPixel;
+      velocity = (e.clientX - lastX) * degreesPerPixel / Math.max(.001, (now - lastMoveTime) / 1000);
+      lastX = e.clientX; lastMoveTime = now;
     });
-    function release(e){
-      if (!dragging || (e.pointerId !== undefined && e.pointerId !== pid)) return;
-      dragging = false; stage.classList.remove('dragging'); suppress = moved > 6; lastInteract = performance.now();
-      // embalo: projeta onde o anel pararia e encaixa no card mais próximo
-      var end = angle + (reduce ? 0 : Math.max(-500, Math.min(500, v)) * .35);
-      target = Math.round(end / step) * step; wake();
+    function endDrag(e){
+      if (!dragging || e.pointerId !== pointerId) return;
+      dragging = false;
+      stage.classList.remove('dragging');
+      suppressClick = travel > 6;
+      // projeta onde o embalo pararia e encaixa no card mais próximo
+      var momentum = reduce ? 0 : Math.max(-500, Math.min(500, velocity)) * .35;
+      target = Math.round((angle + momentum) / STEP) * STEP;
+      touch();
     }
-    window.addEventListener('pointerup', release);
-    window.addEventListener('pointercancel', release);
-    stage.addEventListener('click', function(e){ if (suppress){ e.preventDefault(); e.stopPropagation(); suppress = false; } }, true);
+    addEventListener('pointerup', endDrag);
+    addEventListener('pointercancel', endDrag);
+    stage.addEventListener('click', function(e){
+      if (!suppressClick) return;
+      e.preventDefault(); e.stopPropagation(); suppressClick = false;
+    }, true);
 
-    stage.addEventListener('mouseenter', function(){ hover = true; });
-    stage.addEventListener('mouseleave', function(){ hover = false; lastInteract = performance.now(); wake(); });
-    stage.addEventListener('focusin', function(e){ focusIn = true; var b = e.target.closest('.pcard'); if (b) goTo(+b.getAttribute('data-i')); });
-    stage.addEventListener('focusout', function(){ focusIn = false; lastInteract = performance.now(); wake(); });
+    stage.addEventListener('mouseenter', function(){ hovering = true; });
+    stage.addEventListener('mouseleave', function(){ hovering = false; touch(); });
+    stage.addEventListener('focusin', function(e){
+      focused = true;
+      var card = e.target.closest('.pcard');
+      if (card) goTo(+card.dataset.i);
+    });
+    stage.addEventListener('focusout', function(){ focused = false; touch(); });
     stage.addEventListener('keydown', function(e){
-      if (e.key === 'ArrowRight'){ e.preventDefault(); stepBy(1); }
-      if (e.key === 'ArrowLeft'){ e.preventDefault(); stepBy(-1); }
+      if (e.key !== 'ArrowRight' && e.key !== 'ArrowLeft') return;
+      e.preventDefault();
+      stepBy(e.key === 'ArrowRight' ? 1 : -1);
     });
     document.getElementById('ring-prev').addEventListener('click', function(){ stepBy(-1); });
     document.getElementById('ring-next').addEventListener('click', function(){ stepBy(1); });
     ring.addEventListener('click', function(e){
-      var b = e.target.closest('.pcard'); if (!b) return;
-      var i = +b.getAttribute('data-i');
-      goTo(i); openFicha(i, b);
+      var card = e.target.closest('.pcard');
+      if (!card) return;
+      goTo(+card.dataset.i);
+      openFicha(+card.dataset.i, card);
     });
   })();
 
   /* ---- ficha da atleta ---- */
-  var cur = 0, opener = null;
-  var LABEL = { posicao: 'Posição', curso: 'Curso', numero: 'Número' };
-  function fillFicha(i){
-    cur = (i + EL.length) % EL.length;
-    var a = EL[cur];
-    document.getElementById('ficha-art').innerHTML = '<div class="pcard ' + SCHEMES[cur % 3] + '">' + cardInner(a) + '</div>';
-    document.getElementById('ficha-num').textContent = '#' + a.numero;
-    document.getElementById('ficha-nome').textContent = a.nome;
-    var rows = '';
-    Object.keys(a).forEach(function(k){
-      if (k === 'nome' || k === 'foto' || a[k] === '' || a[k] == null) return;
-      rows += '<div><dt>' + esc(LABEL[k] || (k.charAt(0).toUpperCase() + k.slice(1))) + '</dt><dd>' + esc(a[k]) + '</dd></div>';
-    });
-    document.getElementById('ficha-dl').innerHTML = rows;
-    document.getElementById('ficha-count').textContent = pad(cur + 1) + ' / ' + pad(EL.length);
+  var FIELD_LABELS = { posicao: 'Posição', curso: 'Curso', numero: 'Número' };
+  var fichaIndex = 0, fichaOpener = null;
+
+  function showPlayer(index){
+    fichaIndex = (index + roster.length) % roster.length;
+    var player = roster[fichaIndex];
+    document.getElementById('ficha-art').innerHTML = '<div class="pcard ' + SCHEMES[fichaIndex % 3] + '">' + playerCard(player) + '</div>';
+    document.getElementById('ficha-num').textContent = '#' + player.numero;
+    document.getElementById('ficha-nome').textContent = player.nome;
+    document.getElementById('ficha-dl').innerHTML = Object.keys(player).filter(function(key){
+      return key !== 'nome' && key !== 'foto' && player[key] !== '' && player[key] != null;
+    }).map(function(key){
+      var label = FIELD_LABELS[key] || key.charAt(0).toUpperCase() + key.slice(1);
+      return '<div><dt>' + esc(label) + '</dt><dd>' + esc(player[key]) + '</dd></div>';
+    }).join('');
+    document.getElementById('ficha-count').textContent = pad(fichaIndex + 1) + ' / ' + pad(roster.length);
   }
-  function openFicha(i, from){
-    opener = from; fillFicha(i);
-    if (dlg.showModal) dlg.showModal(); else dlg.setAttribute('open', '');
-    document.documentElement.style.overflow = 'hidden'; document.body.classList.add('modal-on');
+  function setPageLocked(locked){
+    document.documentElement.style.overflow = locked ? 'hidden' : '';
+    document.body.classList.toggle('modal-on', locked);
+  }
+  function openFicha(index, opener){
+    fichaOpener = opener;
+    showPlayer(index);
+    if (fichaDialog.showModal) fichaDialog.showModal(); else fichaDialog.setAttribute('open', '');
+    setPageLocked(true);
     document.getElementById('ficha-close').focus();
   }
   function closeFicha(){
-    if (!dlg.open) return;
-    function done(){
-      dlg.classList.remove('closing'); if (dlg.close) dlg.close(); else dlg.removeAttribute('open');
-      document.documentElement.style.overflow = ''; document.body.classList.remove('modal-on');
-      if (opener) opener.focus({preventScroll:true});
+    if (!fichaDialog.open) return;
+    function finish(){
+      fichaDialog.classList.remove('closing');
+      if (fichaDialog.close) fichaDialog.close(); else fichaDialog.removeAttribute('open');
+      setPageLocked(false);
+      if (fichaOpener) fichaOpener.focus({preventScroll: true});
     }
-    if (reduce) return done();
-    dlg.classList.add('closing'); setTimeout(done, 240);
+    if (reduce) return finish();
+    fichaDialog.classList.add('closing');
+    setTimeout(finish, 240);
   }
   document.getElementById('ficha-close').addEventListener('click', closeFicha);
-  document.getElementById('ficha-prev').addEventListener('click', function(){ fillFicha(cur - 1); });
-  document.getElementById('ficha-next').addEventListener('click', function(){ fillFicha(cur + 1); });
-  dlg.addEventListener('cancel', function(e){ e.preventDefault(); closeFicha(); });
-  dlg.addEventListener('click', function(e){ if (e.target === dlg) closeFicha(); });
-  dlg.addEventListener('keydown', function(e){
-    if (e.key === 'ArrowRight') fillFicha(cur + 1);
-    if (e.key === 'ArrowLeft') fillFicha(cur - 1);
+  document.getElementById('ficha-prev').addEventListener('click', function(){ showPlayer(fichaIndex - 1); });
+  document.getElementById('ficha-next').addEventListener('click', function(){ showPlayer(fichaIndex + 1); });
+  fichaDialog.addEventListener('cancel', function(e){ e.preventDefault(); closeFicha(); });
+  fichaDialog.addEventListener('click', function(e){ if (e.target === fichaDialog) closeFicha(); });
+  fichaDialog.addEventListener('keydown', function(e){
+    if (e.key === 'ArrowRight') showPlayer(fichaIndex + 1);
+    if (e.key === 'ArrowLeft') showPlayer(fichaIndex - 1);
   });
 
   var wd = new Date().getDay(), hojeTreino = null;
@@ -1070,14 +1105,14 @@ var DADOS = {
     watch.forEach(function(_, key){ io.observe(key); });
 
     // parallax no hero + faixa que acelera com a rolagem
-    var mark = document.querySelector('.mark-wrap'), ball = document.getElementById('ballbox');
+    var heroMark = document.querySelector('.mark-wrap'), heroBall = document.getElementById('ballbox');
     var tape = document.querySelector('.tape .track'), tapeAnim = tape && tape.getAnimations ? tape.getAnimations()[0] : null;
     var lastY = scrollY, boost = 0, ticking = false;
     function frame(){
       var y = scrollY, dy = y - lastY; lastY = y;
       if (y < innerHeight * 1.3){
-        mark.style.setProperty('--py', (y * .22).toFixed(1) + 'px');
-        ball.style.setProperty('--pb', (y * -.12).toFixed(1) + 'px');
+        heroMark.style.transform = 'translate3d(0,' + (y * .22).toFixed(1) + 'px,0)';
+        heroBall.style.translate = '0 ' + (y * -.12).toFixed(1) + 'px';
       }
       boost = Math.max(boost * .9, Math.min(7, Math.abs(dy) * .12));
       if (tapeAnim) tapeAnim.playbackRate = (dy < 0 ? -1 : 1) * (1 + boost);
