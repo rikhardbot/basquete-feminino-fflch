@@ -163,22 +163,38 @@ h1,h2,h3,p{margin:0}
 .res.v{background:var(--orange);color:#000}.res.d{background:#fff;color:#000}
 .table-scroll{overflow-x:auto;position:relative}
 
-/* elenco: camisas */
-.jerseys{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(14px,2vw,24px)}
-.jersey{perspective:900px;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left}
-.jersey .inner{position:relative;display:block;aspect-ratio:5/6;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,1.3,.5,1)}
+/* elenco: varal com as camisas nos cabides */
+.varal-wrap{position:relative}
+.varal{overflow-x:auto;overflow-y:hidden;scrollbar-width:none;cursor:grab;overscroll-behavior-x:contain;scroll-snap-type:x proximity;
+  -webkit-mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent);mask-image:linear-gradient(90deg,transparent,#000 6%,#000 94%,transparent)}
+.varal::-webkit-scrollbar{display:none}
+.varal.dragging{cursor:grabbing;scroll-snap-type:none;user-select:none}
+.varal ul{list-style:none;margin:0;display:flex;gap:clamp(10px,2vw,22px);width:max-content;position:relative;padding:0 max(6vw,24px) 40px}
+/* a corda atravessa o varal inteiro */
+.varal ul::before{content:"";position:absolute;left:0;right:0;top:3px;height:5px;border-radius:3px;
+  background:repeating-linear-gradient(115deg,#D9C9AE 0 5px,#8E7B62 5px 8px);box-shadow:0 3px 6px rgba(0,0,0,.6)}
+.peg{flex:none;width:clamp(150px,21vw,230px);scroll-snap-align:center}
+.swing{display:block;transform-origin:50% 4px;will-change:transform}
+.hanger{display:block;width:100%;height:auto;position:relative;z-index:0}
+.jersey{position:relative;z-index:1;display:block;width:100%;margin-top:-10%;perspective:900px;background:none;border:0;padding:0;cursor:pointer;color:inherit;font:inherit;text-align:left;-webkit-tap-highlight-color:transparent}
+.varal.dragging .jersey{cursor:grabbing}
+.jersey .inner{position:relative;display:block;aspect-ratio:200/230;transform-style:preserve-3d;transition:transform .7s cubic-bezier(.3,1.3,.5,1)}
 .jersey[aria-pressed="true"] .inner{transform:rotateY(180deg)}
-.jersey .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;border-radius:14px;overflow:hidden}
-.jersey .front{background:var(--coal);display:grid;place-items:center}
-.jersey .front svg{position:absolute;inset:8% 10% 0;width:80%;height:92%}
-.jersey .front .nm{position:relative;margin-top:-8%;font:400 clamp(15px,1.5vw,19px)/1 var(--jersey);color:#000;letter-spacing:.04em}
-.jersey .front .no{position:relative;font:400 clamp(64px,7vw,92px)/.9 var(--jersey);color:#000}
-.jersey .front .stack{position:relative;display:grid;justify-items:center;gap:6px;padding-top:22%}
-.jersey .back{transform:rotateY(180deg);background:var(--magenta);color:#000;display:flex;flex-direction:column;justify-content:flex-end;padding:16px}
-.jersey .back .ph{position:absolute;inset:12px 12px 40%;border:2px dashed rgba(0,0,0,.45);border-radius:10px;display:grid;place-items:center;font-size:12px;font-weight:700;text-align:center;padding:8px}
-.jersey .back strong{font:400 18px/1.1 var(--jersey)}
-.jersey .back span{font-size:14px;font-weight:600}
-.jersey:hover .front svg path{fill:#FF7A2E}
+.jersey .face{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;filter:drop-shadow(0 14px 14px rgba(0,0,0,.55))}
+.jersey .face > svg{position:absolute;inset:0;width:100%;height:100%}
+.jersey .stack{position:absolute;inset:24% 0 0;display:grid;justify-items:center;align-content:start;gap:6px;color:#000;text-align:center}
+.jersey .nm{font:400 clamp(13px,1.4vw,17px)/1 var(--jersey);letter-spacing:.04em}
+.jersey .no{font:400 clamp(58px,6.6vw,88px)/.9 var(--jersey)}
+.jersey .back{transform:rotateY(180deg)}
+.jersey .back .stack{inset:20% 12% 0;gap:4px}
+.jersey .back .ph{width:46%;aspect-ratio:1;border-radius:50%;border:2px dashed rgba(0,0,0,.5);display:grid;place-items:center;font:700 11px/1.2 var(--display);padding:6px;margin-bottom:6px}
+.jersey .back strong{font:400 clamp(15px,1.5vw,18px)/1.1 var(--jersey)}
+.jersey .back small{font:600 13px/1.3 var(--display)}
+.jersey:hover .front svg path:first-child{fill:#FF7A2E}
+.varal-ctrl{display:flex;align-items:center;gap:10px;margin-top:6px}
+.varal-ctrl button{width:48px;height:48px;border-radius:50%;border:1px solid #fff;background:none;color:#fff;font:700 22px/1 var(--display);cursor:pointer}
+.varal-ctrl button:hover{background:#fff;color:#000}
+.varal-ctrl .pull{font:400 20px/1 var(--hand);color:var(--magenta);margin-left:8px}
 .hint{color:var(--grey);font-size:15px}
 
 /* treinos: página de zine */
@@ -283,7 +299,6 @@ footer a:hover{color:#fff}
   .shop{grid-template-columns:1fr}
   .board{grid-template-columns:1fr;gap:22px}
   .board .mid{order:-1}
-  .jerseys{grid-template-columns:repeat(3,minmax(0,1fr))}
   footer .wrap{grid-template-columns:1fr}
   .note{display:none}
   .levels,.steps,.perks{grid-template-columns:1fr}
@@ -295,9 +310,6 @@ footer a:hover{color:#fff}
   .dock .btn{min-height:50px;padding:0 10px;font-size:15px}
   body.intro-on .dock{transform:translateY(110%)}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
-}
-@media (max-width:560px){
-  .jerseys{grid-template-columns:repeat(2,minmax(0,1fr))}
 }
 @media (max-width:420px){
   .next dl{grid-template-columns:1fr 1fr}
@@ -433,9 +445,16 @@ footer a:hover{color:#fff}
     <div class="wrap">
       <div class="section-head">
         <h2 class="title" id="elenco-title">Elenco</h2>
-        <p class="hint">Bixetes, veteranas e pós de vários cursos da FFLCH. Toque numa camisa para ver quem joga com ela.</p>
+        <p class="hint">Bixetes, veteranas e pós de vários cursos da FFLCH. Puxa o varal pro lado e toca numa camisa para ver quem joga com ela.</p>
       </div>
-      <div class="jerseys" id="jerseys"></div>
+      <div class="varal-wrap">
+        <div class="varal" id="varal" role="region" aria-label="Varal com as camisas do elenco" tabindex="0"><ul id="jerseys"></ul></div>
+        <div class="varal-ctrl">
+          <button type="button" id="varal-prev" aria-label="Camisas anteriores">&larr;</button>
+          <button type="button" id="varal-next" aria-label="Próximas camisas">&rarr;</button>
+          <span class="pull" aria-hidden="true">puxa o varal!</span>
+        </div>
+      </div>
     </div>
   </section>
 
@@ -672,14 +691,92 @@ var DADOS = {
     return '<tr><td>' + esc(r.data) + '</td><td>' + esc(r.adversario) + '</td><td>' + esc(r.campeonato) + '</td><td class="score">' + pad(r.nosso) + ' – ' + pad(r.deles) + '</td><td>' + tag + '</td></tr>';
   }).join('');
 
-  var shirt = '<svg viewBox="0 0 200 230" aria-hidden="true"><path fill="#F26B1D" d="M58 2c10 18 74 18 84 0l30 8c-2 34 6 56 28 66v152H0V76c22-10 30-32 28-66z"/><path d="M58 2c10 18 74 18 84 0" fill="none" stroke="#000" stroke-width="5"/><path d="M28 10c2 34-6 56-28 66M172 10c-2 34 6 56 28 66" fill="none" stroke="#000" stroke-width="5"/></svg>';
+  function shirt(fill){
+    return '<svg viewBox="0 0 200 230" aria-hidden="true"><path fill="' + fill + '" d="M58 2c10 18 74 18 84 0l30 8c-2 34 6 56 28 66v152H0V76c22-10 30-32 28-66z"/><path d="M58 2c10 18 74 18 84 0" fill="none" stroke="#000" stroke-width="5"/><path d="M28 10c2 34-6 56-28 66M172 10c-2 34 6 56 28 66" fill="none" stroke="#000" stroke-width="5"/></svg>';
+  }
+  // cabide: gancho na corda e a barra que fica escondida dentro da camisa
+  var hanger = '<svg class="hanger" viewBox="0 0 200 70" aria-hidden="true" fill="none" stroke-linecap="round" stroke-linejoin="round">' +
+    '<path d="M100 32V24c10-2 12-10 8-16-4-6-14-6-17 1" stroke="#C9C4C6" stroke-width="5"/>' +
+    '<path d="M100 32 36 62h128z" stroke="#8B8487" stroke-width="7"/></svg>';
   document.getElementById('jerseys').innerHTML = D.elenco.map(function(a){
-    return '<button class="jersey" type="button" aria-pressed="false" aria-label="Camisa ' + esc(a.numero) + ', ' + esc(a.nome) + '. Mostrar detalhes">' +
+    return '<li class="peg"><span class="swing">' + hanger +
+      '<button class="jersey" type="button" aria-pressed="false" aria-label="Camisa ' + esc(a.numero) + ', ' + esc(a.nome) + '. Mostrar detalhes">' +
       '<span class="inner">' +
-        '<span class="face front">' + shirt + '<span class="stack"><span class="nm">' + esc(a.nome).toUpperCase() + '</span><span class="no">' + esc(a.numero) + '</span></span></span>' +
-        '<span class="face back"><span class="ph">Foto da atleta</span><strong>' + esc(a.nome) + '</strong><span>' + esc(a.posicao) + '<br>' + esc(a.curso) + '</span></span>' +
-      '</span></button>';
+        '<span class="face front">' + shirt('#F26B1D') + '<span class="stack"><span class="nm">' + esc(a.nome).toUpperCase() + '</span><span class="no">' + esc(a.numero) + '</span></span></span>' +
+        '<span class="face back">' + shirt('#E23FD6') + '<span class="stack"><span class="ph">Foto da atleta</span><strong>' + esc(a.nome) + '</strong><small>' + esc(a.posicao) + '<br>' + esc(a.curso) + '</small></span></span>' +
+      '</span></button></span></li>';
   }).join('');
+
+  /* ---- varal: puxar com o mouse ou o dedo, camisas balançam ---- */
+  (function(){
+    var rack = document.getElementById('varal');
+    var swings = Array.prototype.slice.call(rack.querySelectorAll('.swing'));
+    var ang = swings.map(function(){ return 0; }), vel = swings.map(function(){ return 0; });
+    var last = rack.scrollLeft, running = false, moved = 0, suppress = false;
+
+    function tick(){
+      var x = rack.scrollLeft, v = x - last; last = x;
+      var busy = Math.abs(v) > .2 || drag;
+      for (var i = 0; i < swings.length; i++){
+        // a corda anda, a camisa fica pra trás e volta como pêndulo
+        vel[i] += -ang[i]*0.045 - v*(0.09 + (i % 3)*0.02);
+        vel[i] *= 0.93;
+        ang[i] = Math.max(-16, Math.min(16, ang[i] + vel[i]));
+        if (Math.abs(ang[i]) > .04 || Math.abs(vel[i]) > .04) busy = true;
+        swings[i].style.transform = 'rotate(' + ang[i].toFixed(2) + 'deg)';
+      }
+      if (busy) requestAnimationFrame(tick); else running = false;
+    }
+    function wake(){ if (!reduce && !running){ running = true; last = rack.scrollLeft; requestAnimationFrame(tick); } }
+    rack.addEventListener('scroll', wake, {passive:true});
+
+    // arrastar com o mouse (no celular o dedo já rola o varal sozinho)
+    var drag = false, sx = 0, ss = 0, lx = 0, lt = 0, sp = 0;
+    rack.addEventListener('pointerdown', function(e){
+      if (e.pointerType !== 'mouse' || e.button !== 0) return;
+      drag = true; moved = 0; sx = lx = e.clientX; ss = rack.scrollLeft; lt = performance.now(); sp = 0;
+      rack.classList.add('dragging'); wake();
+    });
+    window.addEventListener('pointermove', function(e){
+      if (!drag) return;
+      var now = performance.now();
+      sp = (e.clientX - lx)/Math.max(1, now - lt); lx = e.clientX; lt = now;
+      moved = Math.max(moved, Math.abs(e.clientX - sx));
+      rack.scrollLeft = ss - (e.clientX - sx);
+    });
+    window.addEventListener('pointerup', function(){
+      if (!drag) return;
+      drag = false; suppress = moved > 6;
+      // embalo: o varal continua correndo e freia sozinho
+      var v = -sp*16;
+      (function glide(){
+        if (reduce || Math.abs(v) < .4){ rack.classList.remove('dragging'); return; }
+        rack.scrollLeft += v; v *= .94; requestAnimationFrame(glide);
+      })();
+    });
+    // arrastou? então não vira a camisa
+    rack.addEventListener('click', function(e){ if (suppress){ e.preventDefault(); e.stopPropagation(); suppress = false; } }, true);
+
+    function step(dir){ var w = swings[0] ? swings[0].parentNode.offsetWidth : 200; rack.scrollBy({left: dir*w*2, behavior: reduce ? 'auto' : 'smooth'}); }
+    document.getElementById('varal-prev').addEventListener('click', function(){ step(-1); });
+    document.getElementById('varal-next').addEventListener('click', function(){ step(1); });
+    rack.addEventListener('keydown', function(e){
+      if (e.key === 'ArrowRight'){ e.preventDefault(); step(1); }
+      if (e.key === 'ArrowLeft'){ e.preventDefault(); step(-1); }
+    });
+
+    // quando o varal aparece na tela, um ventinho balança as camisas
+    if (!reduce && 'IntersectionObserver' in window){
+      var io = new IntersectionObserver(function(en){
+        if (!en[0].isIntersecting) return;
+        io.disconnect();
+        swings.forEach(function(_, i){ vel[i] = 2.2 + (i % 3)*.6; });
+        wake();
+      }, {threshold:.4});
+      io.observe(rack);
+    }
+  })();
+
   Array.prototype.forEach.call(document.querySelectorAll('.jersey'), function(b){
     b.addEventListener('click', function(){ b.setAttribute('aria-pressed', b.getAttribute('aria-pressed') === 'true' ? 'false' : 'true'); });
   });
