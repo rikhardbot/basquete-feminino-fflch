@@ -241,7 +241,6 @@ h1,h2,h3,p{margin:0}
   .ring-stage{--w:clamp(104px,30vw,128px)}
   .ficha-in{grid-template-columns:minmax(0,1fr)}
   .ficha-art{--w:260px;min-height:300px}
-  body.modal-on .dock{transform:translateY(110%)}
 }
 @media (max-width:420px){
   .ficha-nav{gap:8px}.ficha-nav button{flex:1;padding:0 8px}.ficha-nav span{display:none}
@@ -330,9 +329,6 @@ h1,h2,h3,p{margin:0}
 .faq details[open] summary::after{transform:rotate(45deg)}
 .faq details p{color:var(--grey);padding:0 0 24px;max-width:62ch}
 
-/* barra fixa de ação no celular */
-.dock{display:none}
-
 footer{border-top:1px solid var(--rule);padding:44px 0 56px;color:var(--grey);font-size:15px}
 footer .wrap{display:grid;grid-template-columns:2fr 1fr 1fr;gap:32px}
 footer h2{font-size:15px;color:#fff;font-weight:800;margin-bottom:10px}
@@ -357,10 +353,6 @@ footer a:hover{color:#fff}
   .hero-foot{padding-top:18px;gap:28px}
   .hero .lead{margin-top:12px}
   .hero .actions{margin-top:20px}
-  .dock{position:fixed;left:0;right:0;bottom:0;z-index:60;display:grid;grid-template-columns:1.2fr 1fr;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(0,0,0,.94);border-top:1px solid var(--rule);transition:transform .35s cubic-bezier(.2,.9,.2,1)}
-  .dock .btn{min-height:50px;padding:0 10px;font-size:15px}
-  body.intro-on .dock{transform:translateY(110%)}
-  body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 }
 @media (max-width:420px){
   .next dl{grid-template-columns:1fr 1fr}
@@ -693,10 +685,6 @@ footer a:hover{color:#fff}
   </div>
 </footer>
 
-<nav class="dock" aria-label="Ações rápidas">
-  <a class="btn btn-solid" href="#treinos">Quero treinar</a>
-  <a class="btn btn-line" data-chat="treino" href="https://ig.me/m/bffflch" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linejoin="round" aria-hidden="true"><path d="M4 19.5 5.3 15A8 8 0 1 1 9 18.7z"/></svg><span>WhatsApp</span></a>
-</nav>
 
 <script>
 /* =========================================================
