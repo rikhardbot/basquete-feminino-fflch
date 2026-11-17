@@ -163,19 +163,20 @@ h1,h2,h3,p{margin:0}
 .res.v{background:var(--orange);color:#000}.res.d{background:#fff;color:#000}
 .table-scroll{overflow-x:auto;position:relative}
 
+#elenco{overflow:hidden;overflow:clip}
 /* elenco: anel 3D de cards (ideia do carrossel de ilkhoeri no Uiverse, adaptada)
    O anel gira sozinho; arrasta para girar; clique abre a ficha da atleta. */
-.ring-stage{--w:clamp(112px,10.5vw,150px);position:relative;height:calc(var(--w) * 2.45);perspective:1100px;overflow:hidden;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
+.ring-stage{--w:clamp(112px,10.5vw,150px);position:relative;z-index:2;height:calc(var(--w) * 3.7);perspective:calc(var(--w) * 3.5);perspective-origin:50% 34%;overflow:visible;cursor:grab;touch-action:pan-y;user-select:none;-webkit-user-select:none;outline:none}
 .ring-stage:focus-visible{box-shadow:inset 0 0 0 3px var(--magenta)}
 .ring-stage.dragging{cursor:grabbing}
 .ring-stage.dragging .pcard{pointer-events:none}
-.ring{position:absolute;z-index:1;left:50%;top:44%;width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2);transform-style:preserve-3d;transform:rotateX(-8deg)}
+.ring{position:absolute;z-index:1;left:50%;top:41%;width:var(--w);height:calc(var(--w) * 1.42);margin:calc(var(--w) * -.71) 0 0 calc(var(--w) / -2);transform-style:preserve-3d;transform:rotateX(-8deg)}
 .ring .slot{position:absolute;inset:0;transform-style:preserve-3d;--dim:0;transform:rotateY(calc(var(--i) * var(--step, 45deg))) translateZ(var(--r, 280px))}
 /* chão: círculo central da quadra visto em perspectiva */
-.ring-floor{position:absolute;z-index:0;left:50%;bottom:5%;width:min(92vw,calc(var(--w) * 5.4));aspect-ratio:5/1;transform:translateX(-50%);border-radius:50%;border:2px solid rgba(255,255,255,.12);
+.ring-floor{position:absolute;z-index:0;left:50%;bottom:-2%;width:min(118vw,calc(var(--w) * 8));aspect-ratio:4.6/1;transform:translateX(-50%);border-radius:50%;border:2px solid rgba(255,255,255,.12);
   background:radial-gradient(closest-side,rgba(242,107,29,.22),transparent 70%);pointer-events:none}
 .ring-floor::after{content:"";position:absolute;inset:30% 38%;border-radius:50%;border:2px solid rgba(255,255,255,.1)}
-.ring-ctrl{display:flex;align-items:center;justify-content:center;gap:18px;margin-top:6px}
+.ring-ctrl{position:relative;z-index:3;display:flex;align-items:center;justify-content:center;gap:18px;margin-top:6px}
 .ring-ctrl button{width:52px;height:52px;display:grid;place-items:center;border:1px solid #fff;border-radius:50%;background:none;color:#fff;cursor:pointer;transition:background-color .2s,color .2s}
 .ring-ctrl button:hover{background:#fff;color:#000}
 .ring-ctrl button svg{width:20px;height:20px}
@@ -236,7 +237,7 @@ h1,h2,h3,p{margin:0}
 .ficha-close:hover{background:var(--orange);color:#000}
 .ficha-close svg{width:18px;height:18px}
 @media (max-width:860px){
-  .ring-stage{--w:clamp(104px,30vw,128px);perspective:800px}
+  .ring-stage{--w:clamp(104px,30vw,128px)}
   .ficha-in{grid-template-columns:minmax(0,1fr)}
   .ficha-art{--w:260px;min-height:300px}
   body.modal-on .dock{transform:translateY(110%)}
@@ -833,7 +834,7 @@ var DADOS = {
     function frontIndex(){ var k = Math.round(-angle / step); return ((k % n) + n) % n; }
     var lastFront = -1;
     function render(){
-      ring.style.transform = 'rotateX(-8deg) rotateY(' + angle.toFixed(3) + 'deg)';
+      ring.style.transform = 'rotateX(-11deg) rotateY(' + angle.toFixed(3) + 'deg)';
       for (var i = 0; i < n; i++){
         var rel = (((i * step + angle) % 360) + 540) % 360 - 180;   // 0 = de frente
         var c = Math.cos(rel * Math.PI / 180);
@@ -854,9 +855,12 @@ var DADOS = {
     }
     function stepBy(dir){ target = (Math.round((target !== null ? target : angle) / step) - dir) * step; lastInteract = performance.now(); wake(); }
 
-    var running = false, onScreen = true, prevT = 0;
+    var running = false, onScreen = true, prevT = 0, lastSY = scrollY;
     function tick(t){
       var dt = Math.min(64, t - prevT) / 1000; prevT = t;
+      // rolar a página empurra os cards pelo anel
+      var sdy = scrollY - lastSY; lastSY = scrollY;
+      if (!reduce && !dragging && target === null && Math.abs(sdy) < 400) angle -= sdy * .22;
       if (target !== null){
         if (reduce){ angle = target; target = null; }
         else { var d = target - angle; angle += d * Math.min(1, dt * 7); if (Math.abs(d) < .05){ angle = target; target = null; } }
@@ -871,6 +875,7 @@ var DADOS = {
       new IntersectionObserver(function(en){ onScreen = en[0].isIntersecting; if (onScreen) wake(); }).observe(stage);
     }
     document.addEventListener('visibilitychange', function(){ if (!document.hidden) wake(); });
+    addEventListener('scroll', function(){ if (onScreen) wake(); }, {passive:true});
     render(); wake();
 
     // arrastar para girar (mouse e dedo)
