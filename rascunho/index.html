@@ -323,7 +323,8 @@ ol,ul{padding:0;list-style:none}
 .ficha-nav{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:auto;padding-top:32px}
 .ficha-nav button{min-height:48px;padding:0 16px;border:1px solid var(--rule);background:none;color:#fff;font:800 16px/1 var(--head);letter-spacing:.08em;text-transform:uppercase;cursor:pointer;transition:background-color .25s,color .25s}
 .ficha-nav button:hover{background:#fff;color:#000}
-.ficha-nav span{font:400 14px/1 var(--num);color:var(--grey)}
+.ficha-nav span{font:400 14px/1 var(--num);color:var(--grey);white-space:nowrap}
+.ficha-nav button{white-space:nowrap}
 .ficha-close{position:absolute;top:0;right:0;z-index:5;width:52px;height:52px;display:grid;place-items:center;border:0;border-left:1px solid var(--rule);border-bottom:1px solid var(--rule);background:var(--ink);color:#fff;cursor:pointer;transition:background-color .25s,color .25s}
 .ficha-close:hover{background:var(--orange);color:#000}
 .ficha-close svg{width:20px;height:20px}
@@ -393,7 +394,7 @@ ol,ul{padding:0;list-style:none}
 
 /* ---------- dúvidas ---------- */
 .faq-grid{display:grid;grid-template-columns:minmax(0,4fr) minmax(0,8fr);gap:clamp(32px,6vw,100px)}
-.faq-grid h2{font-size:clamp(54px,7vw,104px)}
+.faq-grid h2{font-size:clamp(46px,7vw,104px);overflow-wrap:anywhere}
 .faq-grid .aside p{color:var(--grey);margin:20px 0 24px;max-width:30ch}
 .faq{border-top:1px solid var(--white)}
 .faq details{border-bottom:1px solid var(--rule)}
@@ -448,10 +449,10 @@ footer nav a:hover{color:var(--orange);padding-left:6px}
   .menu.open a{opacity:1;transform:none}
   .menu.open a:nth-child(2){transition-delay:.05s}.menu.open a:nth-child(3){transition-delay:.1s}
   .menu.open a:nth-child(4){transition-delay:.15s}.menu.open a:nth-child(5){transition-delay:.2s}
-  .hero-foot,.who,.faq-grid,.howto{grid-template-columns:1fr}
-  .shead{grid-template-columns:1fr}
-  .elenco .shead{grid-template-columns:1fr}
-  .ficha-in{grid-template-columns:1fr}
+  .hero-foot,.who,.faq-grid,.howto{grid-template-columns:minmax(0,1fr)}
+  .shead{grid-template-columns:minmax(0,1fr)}
+  .elenco .shead{grid-template-columns:minmax(0,1fr)}
+  .ficha-in{grid-template-columns:minmax(0,1fr)}
   .ficha-art{min-height:300px}
   .foot-top{grid-template-columns:1fr 1fr}
   .foot-top > div:first-child{grid-column:1/-1}
@@ -463,14 +464,15 @@ footer nav a:hover{color:var(--orange);padding-left:6px}
   .hero-stage{padding-top:calc(40vw + 8px)}
   .ballbox{width:44vw;right:-2vw;top:2px}
   .hero-claw{width:70vw;right:-6vw;top:0}
-  .drag-note{bottom:-4px}
+  .drag-note{display:none}
+  .ficha-nav button{padding:0 12px;font-size:15px}
   .hero-foot{padding-top:28px}
   .stamp{position:relative;right:auto;top:auto;display:inline-block;margin-bottom:28px}
   .timetable .row{grid-template-columns:minmax(0,1fr) auto;gap:6px 16px}
   .timetable .time{grid-column:1}
   .timetable .place{grid-column:1/-1}
   .timetable .tag{grid-row:1;grid-column:2}
-  .steps{grid-template-columns:1fr}
+  .steps{grid-template-columns:minmax(0,1fr)}
   .rail li{width:78vw}
   .rail-hint{display:none}
   .score{grid-template-columns:1fr 1fr}
@@ -486,19 +488,22 @@ footer nav a:hover{color:var(--orange);padding-left:6px}
   .results .camp{grid-column:1;grid-row:3;font-size:14px}
   .results .pl{grid-column:2;grid-row:1/4}
   .results .r{grid-column:3;grid-row:1/4}
-  .shop{grid-template-columns:1fr}
+  .shop{grid-template-columns:minmax(0,1fr)}
   .perks li{grid-template-columns:48px minmax(0,1fr);gap:6px 14px}
   .perks span{grid-column:2}
-  .pitch{grid-template-columns:1fr}
+  .pitch{grid-template-columns:minmax(0,1fr)}
   .faq details p{padding:0 0 22px 60px}
-  .foot-top{grid-template-columns:1fr}
+  .foot-top{grid-template-columns:minmax(0,1fr)}
   .dock{position:fixed;left:0;right:0;bottom:0;z-index:70;display:grid;grid-template-columns:1.2fr 1fr;gap:8px;padding:10px 12px calc(10px + env(safe-area-inset-bottom));background:rgba(0,0,0,.94);border-top:1px solid var(--rule);transition:transform .35s var(--ease)}
   .dock .btn{min-height:50px;padding:0 10px;font-size:17px}
-  body.intro-on .dock,body.modal-on .dock{transform:translateY(110%)}
+  body.intro-on .dock,body.modal-on .dock,body.menu-on .dock{transform:translateY(110%)}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 }
 @media (max-width:420px){
   .brand small{display:none}
+  .ficha-nav{gap:8px}
+  .ficha-nav button{flex:1;padding:0 8px}
+  .ficha-nav span{display:none}
   .ticket dl{grid-template-columns:1fr 1fr}
   .ticket dl div:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--rule)}
   .card-num{font-size:300px}
@@ -1103,6 +1108,7 @@ var DADOS = {
     mb.setAttribute('aria-expanded', open ? 'true' : 'false');
     menu.classList.toggle('open', open);
     document.documentElement.style.overflow = open ? 'hidden' : '';
+    document.body.classList.toggle('menu-on', open);
   }
   mb.addEventListener('click', function(){ setMenu(mb.getAttribute('aria-expanded') !== 'true'); });
   menu.addEventListener('click', function(e){ if (e.target.closest('a')) setMenu(false); });
