@@ -460,8 +460,10 @@ footer nav a:hover{color:var(--orange);padding-left:6px}
   .hero-meta{grid-template-columns:1fr auto}
   .hero-meta span:nth-child(2){display:none}
   .hero-title{font-size:clamp(64px,19.5vw,140px)}
-  .ballbox{width:40vw;right:-2vw;top:0}
-  .hero-claw{width:74vw;right:-14vw;top:-2%}
+  .hero-stage{padding-top:calc(40vw + 8px)}
+  .ballbox{width:44vw;right:-2vw;top:2px}
+  .hero-claw{width:70vw;right:-6vw;top:0}
+  .drag-note{bottom:-4px}
   .hero-foot{padding-top:28px}
   .stamp{position:relative;right:auto;top:auto;display:inline-block;margin-bottom:28px}
   .timetable .row{grid-template-columns:minmax(0,1fr) auto;gap:6px 16px}
@@ -496,6 +498,7 @@ footer nav a:hover{color:var(--orange);padding-left:6px}
   body{padding-bottom:calc(72px + env(safe-area-inset-bottom))}
 }
 @media (max-width:420px){
+  .brand small{display:none}
   .ticket dl{grid-template-columns:1fr 1fr}
   .ticket dl div:nth-child(3){grid-column:1/-1;border-left:0;border-top:1px solid var(--rule)}
   .card-num{font-size:300px}
